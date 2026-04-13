@@ -1,6 +1,7 @@
 package com.institute.ims.ui.examinations
 
 import androidx.lifecycle.ViewModel
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamStatus
@@ -37,7 +38,10 @@ class CreateExamViewModel(
 
     fun onTitleChange(value: String) = patch { it.copy(title = value, errorMessage = null) }
 
-    fun onExamTypeChange(value: String) = patch { it.copy(examType = value, errorMessage = null) }
+    fun onExamCategoryChange(value: String) = patch { it.copy(examCategory = value, errorMessage = null) }
+
+    fun onAssessmentModeChange(mode: AssessmentMode) =
+        patch { it.copy(assessmentMode = mode, errorMessage = null) }
 
     fun onBatchChange(batchId: String) = patch { it.copy(batchId = batchId, errorMessage = null) }
 
@@ -83,7 +87,7 @@ class CreateExamViewModel(
         val exam = Exam(
             id = "exam-${UUID.randomUUID().toString().take(8)}",
             title = s.title.trim(),
-            examType = s.examType,
+            examType = s.examCategory,
             batchId = s.batchId,
             batchLabel = batchLabel,
             subjectName = s.subjectName.trim().ifBlank { "General" },
@@ -92,7 +96,7 @@ class CreateExamViewModel(
             evaluationType = s.evaluationType,
             scheduleLabel = s.scheduleLabel.trim().ifBlank { "TBA" },
             status = s.status,
-            isCustomType = s.examType.equals("Custom", ignoreCase = true),
+            assessmentMode = s.assessmentMode,
         )
         examRepository.addExam(exam)
         onSuccess()

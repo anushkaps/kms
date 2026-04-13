@@ -1,6 +1,7 @@
 package com.institute.ims.ui.examinations
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,12 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,9 +40,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamAnalytics
 import com.institute.ims.data.model.ExamStatus
+import com.institute.ims.data.model.uiLabel
 import com.institute.ims.data.model.ScoreBucket
 import com.institute.ims.utils.ExamAnalyticsCalculator
 
@@ -64,7 +69,7 @@ fun ReportScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Exam report",
+                            text = "Report center",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -98,6 +103,8 @@ fun ReportScreen(
                 exam = state.exam!!,
                 groupName = state.groupName,
                 analytics = state.analytics,
+                selectedTab = state.selectedTab,
+                onTabChange = viewModel::onReportTabChange,
                 modifier = Modifier.padding(innerPadding),
             )
             else -> Spacer(modifier = Modifier.padding(innerPadding))
@@ -136,6 +143,8 @@ private fun ReportBody(
     exam: Exam,
     groupName: String?,
     analytics: ExamAnalytics?,
+    selectedTab: ReportCenterTab,
+    onTabChange: (ReportCenterTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -144,21 +153,73 @@ private fun ReportBody(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            ReportMetadataCard(exam = exam, groupName = groupName)
-        }
-        item {
-            SectionTitle("Summary")
-            ReportSummaryCard(
-                exam = exam,
-                resultCount = analytics?.totalStudents ?: 0,
+            Text(
+                text = "On-demand reports — pick a view below. All sections use the same local results snapshot.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         item {
-            SectionTitle("Analytics")
-            if (analytics == null) {
-                ReportEmptyAnalyticsCard()
-            } else {
-                ReportAnalyticsSection(exam = exam, analytics = analytics)
+            ReportMetadataCard(exam = exam, groupName = groupName)
+        }
+        item {
+            ReportCenterTabRow(
+                selected = selectedTab,
+                onSelect = onTabChange,
+            )
+        }
+        when (selectedTab) {
+            ReportCenterTab.QUICK_SUMMARY -> {
+                item {
+                    SectionTitle("Quick summary")
+                    ReportSummaryCard(
+                        exam = exam,
+                        resultCount = analytics?.totalStudents ?: 0,
+                    )
+                }
+                item {
+                    if (analytics == null) {
+                        ReportEmptyQuickStats()
+                    } else {
+                        ReportQuickStatsGrid(analytics = analytics)
+                    }
+                }
+            }
+            ReportCenterTab.PERFORMANCE_OVERVIEW -> {
+                item {
+                    SectionTitle("Performance overview")
+                    Text(
+                        text = "Grade mix and cohort outcomes for this exam.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                item {
+                    if (analytics == null) {
+                        ReportEmptyQuickStats()
+                    } else {
+                        ReportPerformanceOverview(exam = exam, analytics = analytics)
+                    }
+                }
+            }
+            ReportCenterTab.RESULT_DISTRIBUTION -> {
+                item {
+                    SectionTitle("Result distribution")
+                    Text(
+                        text = "Score buckets as % of max marks (automated from recorded results).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                item {
+                    if (analytics == null) {
+                        ReportDistributionEmpty()
+                    } else {
+                        ReportDistributionSection(exam = exam, analytics = analytics)
+                    }
+                }
             }
         }
     }
@@ -220,12 +281,13 @@ private fun ReportMetadataCard(
                     )
                 }
             }
-            ReportDetailLine("Exam type", exam.examType + if (exam.isCustomType) " (custom)" else "")
+            ReportDetailLine("Exam category", exam.examType)
+            ReportDetailLine("Assessment mode", exam.assessmentMode.uiLabel())
             ReportDetailLine("Subject", exam.subjectName)
             ReportDetailLine("Batch", exam.batchLabel)
             ReportDetailLine("Group", groupName ?: exam.groupId)
             ReportDetailLine("Schedule", exam.scheduleLabel)
-            ReportDetailLine("Evaluation scale", exam.evaluationType.name)
+            ReportDetailLine("Evaluation type", exam.evaluationType.name)
         }
     }
 }
@@ -266,7 +328,11 @@ private fun ReportSummaryCard(
         ) {
             ReportDetailLine("Results on file", resultCount.toString())
             ReportDetailLine(
-                "Max marks",
+                when (exam.assessmentMode) {
+                    AssessmentMode.MARKS -> "Max marks"
+                    AssessmentMode.GRADE_BASED -> "Grade scale (max pts)"
+                    AssessmentMode.CUSTOM -> "Rubric cap (max pts)"
+                },
                 when {
                     !exam.maxScore.isFinite() -> "Not set"
                     exam.maxScore > 0 -> exam.maxScore.toString()
@@ -283,58 +349,59 @@ private fun ReportSummaryCard(
 }
 
 @Composable
-private fun ReportEmptyAnalyticsCard() {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-            ),
-        ) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "No results to analyze",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "Record marks for this exam to see averages, pass rate, and the distribution chart below.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Mark distribution (% of max)",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "Preview — bars fill once scores exist (same buckets as populated reports).",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                val preview = ExamAnalyticsCalculator.emptyDistributionPreview()
-                val maxBucket = 1
-                preview.forEach { bucket ->
-                    BucketBarRow(bucket = bucket, maxCount = maxBucket)
-                }
-            }
+private fun ReportCenterTabRow(
+    selected: ReportCenterTab,
+    onSelect: (ReportCenterTab) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = selected == ReportCenterTab.QUICK_SUMMARY,
+            onClick = { onSelect(ReportCenterTab.QUICK_SUMMARY) },
+            label = { Text("Quick summary") },
+        )
+        FilterChip(
+            selected = selected == ReportCenterTab.PERFORMANCE_OVERVIEW,
+            onClick = { onSelect(ReportCenterTab.PERFORMANCE_OVERVIEW) },
+            label = { Text("Performance overview") },
+        )
+        FilterChip(
+            selected = selected == ReportCenterTab.RESULT_DISTRIBUTION,
+            onClick = { onSelect(ReportCenterTab.RESULT_DISTRIBUTION) },
+            label = { Text("Result distribution") },
+        )
+    }
+}
+
+@Composable
+private fun ReportEmptyQuickStats() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        ),
+    ) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "No results on file",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Record marks for this exam to populate quick stats, performance breakdown, and distribution charts.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 @Composable
-private fun ReportAnalyticsSection(
-    exam: Exam,
-    analytics: ExamAnalytics,
-) {
+private fun ReportQuickStatsGrid(analytics: ExamAnalytics) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -371,6 +438,16 @@ private fun ReportAnalyticsSection(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
         )
+    }
+}
+
+@Composable
+private fun ReportPerformanceOverview(
+    exam: Exam,
+    analytics: ExamAnalytics,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ReportQuickStatsGrid(analytics = analytics)
         if (analytics.passedCount != null && analytics.failedCount != null) {
             Text(
                 text = "Passed: ${analytics.passedCount} · Not passed: ${analytics.failedCount}",
@@ -401,10 +478,7 @@ private fun ReportAnalyticsSection(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
+                            Text(text = label, style = MaterialTheme.typography.bodyMedium)
                             Text(
                                 text = count.toString(),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -414,7 +488,48 @@ private fun ReportAnalyticsSection(
                     }
                 }
             }
+        } else {
+            Text(
+                text = "No letter-grade rows yet — labels appear once marks are stored.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
+    }
+}
+
+@Composable
+private fun ReportDistributionEmpty() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = "Mark distribution (% of max)",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Preview — bars fill once scores exist.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val preview = ExamAnalyticsCalculator.emptyDistributionPreview()
+            preview.forEach { bucket ->
+                BucketBarRow(bucket = bucket, maxCount = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReportDistributionSection(
+    exam: Exam,
+    analytics: ExamAnalytics,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (analytics.buckets.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -447,7 +562,7 @@ private fun ReportAnalyticsSection(
                     ),
                 ) {
                     Text(
-                        text = "Percent-based distribution needs max marks > 0. Score statistics above still reflect raw marks.",
+                        text = "Percent-based distribution needs max marks > 0.",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(14.dp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

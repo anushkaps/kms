@@ -1,5 +1,6 @@
 package com.institute.ims.data.repository
 
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamGroup
@@ -32,7 +33,7 @@ object FakeExamRepository : ExamRepository {
             evaluationType = EvaluationType.GPA,
             scheduleLabel = "12 Apr 2026 · 10:00",
             status = ExamStatus.PUBLISHED,
-            isCustomType = false,
+            assessmentMode = AssessmentMode.MARKS,
         ),
         Exam(
             id = "exam-002",
@@ -46,7 +47,7 @@ object FakeExamRepository : ExamRepository {
             evaluationType = EvaluationType.CCE,
             scheduleLabel = "18 Apr 2026 · 09:30",
             status = ExamStatus.DRAFT,
-            isCustomType = false,
+            assessmentMode = AssessmentMode.MARKS,
         ),
         Exam(
             id = "exam-003",
@@ -60,7 +61,7 @@ object FakeExamRepository : ExamRepository {
             evaluationType = EvaluationType.CWA,
             scheduleLabel = "02 May 2026 · 14:00",
             status = ExamStatus.COMPLETED,
-            isCustomType = false,
+            assessmentMode = AssessmentMode.GRADE_BASED,
         ),
         Exam(
             id = "exam-004",
@@ -74,7 +75,7 @@ object FakeExamRepository : ExamRepository {
             evaluationType = EvaluationType.CWA,
             scheduleLabel = "22 Apr 2026 · Slots TBA",
             status = ExamStatus.PUBLISHED,
-            isCustomType = false,
+            assessmentMode = AssessmentMode.CUSTOM,
         ),
     )
 

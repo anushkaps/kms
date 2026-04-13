@@ -12,5 +12,5 @@ data class Exam(
     val evaluationType: EvaluationType,
     val scheduleLabel: String,
     val status: ExamStatus,
-    val isCustomType: Boolean,
+    val assessmentMode: AssessmentMode,
 )

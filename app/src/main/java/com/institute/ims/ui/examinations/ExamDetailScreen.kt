@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -35,8 +38,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.Exam
+import com.institute.ims.data.model.uiLabel
 import com.institute.ims.data.model.ExamResult
 import com.institute.ims.data.model.ExamStatus
 
@@ -93,6 +98,7 @@ fun ExamDetailScreen(
                 exam = exam,
                 groupName = state.groupName,
                 results = state.results,
+                onOpenReport = onOpenReport,
                 modifier = Modifier.padding(innerPadding),
             )
             else -> Spacer(modifier = Modifier.padding(innerPadding))
@@ -131,6 +137,7 @@ private fun ExamDetailBody(
     exam: Exam,
     groupName: String?,
     results: List<ExamResult>,
+    onOpenReport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -142,16 +149,41 @@ private fun ExamDetailBody(
             SummaryHeader(exam = exam, groupName = groupName)
         }
         item {
-            Text(
-                text = "Results",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Marks and grades follow the selected evaluation model (${exam.evaluationType.name}).",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Results",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "Marks and grades follow ${exam.evaluationType.name} for this paper.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            FilledTonalButton(
+                onClick = onOpenReport,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Assessment,
+                        contentDescription = null,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Report center & analytics")
+                }
+            }
         }
         if (results.isEmpty()) {
             item {
@@ -161,7 +193,7 @@ private fun ExamDetailBody(
                     ),
                 ) {
                     Text(
-                        text = "No marks recorded for this exam yet.",
+                        text = "No results recorded yet.",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(16.dp),
                     )
@@ -213,12 +245,20 @@ private fun SummaryHeader(
                     )
                 }
             }
-            DetailLine("Type", exam.examType + if (exam.isCustomType) " (custom)" else "")
+            DetailLine("Category", exam.examType)
+            DetailLine("Assessment mode", exam.assessmentMode.uiLabel())
             DetailLine("Subject", exam.subjectName)
             DetailLine("Batch", exam.batchLabel)
             DetailLine("Group", groupName ?: exam.groupId)
             DetailLine("Schedule", exam.scheduleLabel)
-            DetailLine("Max marks", exam.maxScore.toString())
+            DetailLine(
+                label = when (exam.assessmentMode) {
+                    AssessmentMode.MARKS -> "Max marks"
+                    AssessmentMode.GRADE_BASED -> "Grade scale (max pts)"
+                    AssessmentMode.CUSTOM -> "Rubric cap (max pts)"
+                },
+                value = exam.maxScore.toString(),
+            )
         }
     }
 }

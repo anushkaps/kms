@@ -135,7 +135,10 @@ private fun StudentProfileBody(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            ProfileHero(student = student)
+            ProfileHero(
+                student = student,
+                batchDisplay = batchDisplay,
+            )
         }
         item {
             InfoSectionCard(
@@ -148,7 +151,6 @@ private fun StudentProfileBody(
                     )
                 },
             ) {
-                ProfileRow("Student ID", student.studentNumber)
                 ProfileRow("Batch", batchDisplay ?: student.batchId)
                 ProfileRow("Programme", student.courseLabel)
                 ProfileRow("Academic year", student.academicYearLabel)
@@ -186,14 +188,17 @@ private fun StudentProfileBody(
                 leadingIcon = null,
             ) {
                 ProfileRow("Status", if (student.status == StudentStatus.CURRENT) "Current" else "Former")
-                ProfileRow("Internal ID", student.id)
+                ProfileRow("Record ID", student.id)
             }
         }
     }
 }
 
 @Composable
-private fun ProfileHero(student: Student) {
+private fun ProfileHero(
+    student: Student,
+    batchDisplay: String?,
+) {
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
@@ -223,8 +228,36 @@ private fun ProfileHero(student: Student) {
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = student.studentNumber,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = batchDisplay ?: student.batchId,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             StatusBadge(student.status)
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Email,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = student.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 }

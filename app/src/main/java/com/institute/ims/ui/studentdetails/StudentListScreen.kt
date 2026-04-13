@@ -58,6 +58,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.Batch
 import com.institute.ims.data.model.Student
 import com.institute.ims.data.model.StudentStatus
+import com.institute.ims.utils.studentCategoryShortLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -423,11 +424,9 @@ private fun StudentRowCard(
                     )
                     StatusPill(student.status)
                     Text(
-                        text = student.category,
+                        text = studentCategoryShortLabel(student.category),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

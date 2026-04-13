@@ -38,6 +38,10 @@ class ReportViewModel(
         }
     }
 
+    fun onReportTabChange(tab: ReportCenterTab) {
+        _uiState.update { it.copy(selectedTab = tab) }
+    }
+
     class Factory(
         private val examId: String,
     ) : ViewModelProvider.Factory {
