@@ -1,0 +1,20 @@
+package com.institute.ims.ui.dashboard
+
+import com.institute.ims.data.model.DashboardModuleCard
+import com.institute.ims.data.model.DashboardStat
+import com.institute.ims.data.model.NewsItem
+import com.institute.ims.data.model.UserRole
+
+data class DashboardUiState(
+    val displayName: String = "",
+    val role: UserRole? = null,
+    val userInitials: String = "",
+    val greetingLine: String = "",
+    val instituteSubtitle: String = "Institute Management System",
+    val searchQuery: String = "",
+    val quickChips: List<String> = emptyList(),
+    val stats: List<DashboardStat> = emptyList(),
+    val modules: List<DashboardModuleCard> = emptyList(),
+    val news: List<NewsItem> = emptyList(),
+    val overviewLine: String = "",
+)
