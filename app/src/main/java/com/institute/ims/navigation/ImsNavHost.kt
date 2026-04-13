@@ -77,6 +77,12 @@ fun ImsNavHost(
                     userId = user.id,
                     onOpenStudents = { navController.navigate(NavRoutes.StudentList) },
                     onOpenExams = { navController.navigate(NavRoutes.ExamList) },
+                    onOpenStudentProfile = { studentId ->
+                        navController.navigate(NavRoutes.studentProfile(studentId))
+                    },
+                    onOpenExamDetail = { examId ->
+                        navController.navigate(NavRoutes.examDetail(examId))
+                    },
                 )
             }
         }

@@ -26,6 +26,11 @@ fun RoleSelectScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
+            text = "Institute IMS",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
             text = "Choose your role",
             style = MaterialTheme.typography.headlineSmall,
         )

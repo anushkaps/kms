@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,9 +46,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamStatus
+import com.institute.ims.data.model.uiLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,20 +83,22 @@ fun ExamListScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreateExam,
-                icon = {
-                    Icon(Icons.Outlined.Add, contentDescription = null)
-                },
-                text = { Text("New exam") },
-            )
+            Box(modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateExam,
+                    icon = {
+                        Icon(Icons.Outlined.Add, contentDescription = null)
+                    },
+                    text = { Text("New exam") },
+                )
+            }
         },
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 88.dp),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
@@ -202,6 +207,7 @@ private fun ExamListCard(
                 MetaLine(Icons.Outlined.CalendarMonth, exam.scheduleLabel)
                 MetaLine(Icons.Outlined.Groups, groupLabel ?: exam.groupId)
                 Row(
+                    modifier = Modifier.padding(top = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -210,15 +216,26 @@ private fun ExamListCard(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
+                    Text(
+                        text = "·",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    Text(
+                        text = "Max ${exam.maxScore.toInt()} marks",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+                Row(
+                    modifier = Modifier.padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AssessmentModeChip(exam.assessmentMode)
                     EvalChip(exam.evaluationType)
                     StatusChip(exam.status)
                 }
-                Text(
-                    text = "Max ${exam.maxScore.toInt()} marks",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
@@ -251,6 +268,21 @@ private fun MetaLine(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun AssessmentModeChip(mode: AssessmentMode) {
+    Surface(
+        shape = RoundedCornerShape(percent = 50),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Text(
+            text = mode.uiLabel(),
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

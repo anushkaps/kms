@@ -7,32 +7,36 @@ import com.institute.ims.data.model.UserRole
 
 /** Static dashboard stats, module cards, and quick-action chip labels. */
 object FakeDashboardRepository : DashboardRepository {
-    override fun getSummaryStats(): List<DashboardStat> = listOf(
-        DashboardStat(
-            id = "students",
-            label = "Total students",
-            value = "10",
-            caption = "Current & former",
-        ),
-        DashboardStat(
-            id = "batches",
-            label = "Active batches",
-            value = "2",
-            caption = "CS programmes",
-        ),
-        DashboardStat(
-            id = "exams",
-            label = "Upcoming exams",
-            value = "4",
-            caption = "Next 14 days",
-        ),
-        DashboardStat(
-            id = "reports",
-            label = "Reports ready",
-            value = "3",
-            caption = "Awaiting review",
-        ),
-    )
+    override fun getSummaryStats(role: UserRole): List<DashboardStat> = when (role) {
+        UserRole.ADMIN -> listOf(
+            DashboardStat(
+                id = "pending_approval",
+                label = "Pending faculty approval",
+                value = "2",
+                caption = "Sign-offs waiting",
+            ),
+            DashboardStat(
+                id = "published_reports",
+                label = "Published reports",
+                value = "12",
+                caption = "This term",
+            ),
+        )
+        UserRole.FACULTY -> listOf(
+            DashboardStat(
+                id = "grading_queue",
+                label = "Grading queue",
+                value = "1",
+                caption = "Draft papers",
+            ),
+            DashboardStat(
+                id = "upcoming_exams",
+                label = "Upcoming exams",
+                value = "2",
+                caption = "Next 7 days",
+            ),
+        )
+    }
 
     override fun getModuleCards(): List<DashboardModuleCard> = listOf(
         DashboardModuleCard(

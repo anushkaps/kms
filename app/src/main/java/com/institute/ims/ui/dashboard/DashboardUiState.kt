@@ -12,6 +12,8 @@ data class DashboardUiState(
     val greetingLine: String = "",
     val instituteSubtitle: String = "Institute Management System",
     val searchQuery: String = "",
+    /** When set, Latest news shows only this item until cleared (from hub search). */
+    val newsSpotlightId: String? = null,
     val quickChips: List<String> = emptyList(),
     val stats: List<DashboardStat> = emptyList(),
     val modules: List<DashboardModuleCard> = emptyList(),

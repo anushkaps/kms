@@ -3,24 +3,31 @@ package com.institute.ims.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.institute.ims.data.model.DashboardModuleId
+import com.institute.ims.data.model.StudentFilterCriteria
 import com.institute.ims.data.model.UserRole
 import com.institute.ims.data.repository.DashboardRepository
+import com.institute.ims.data.repository.ExamRepository
 import com.institute.ims.data.repository.FakeDashboardRepository
+import com.institute.ims.data.repository.FakeExamRepository
 import com.institute.ims.data.repository.FakeNewsRepository
+import com.institute.ims.data.repository.FakeStudentRepository
 import com.institute.ims.data.repository.FakeUserRepository
 import com.institute.ims.data.repository.NewsRepository
+import com.institute.ims.data.repository.StudentRepository
 import com.institute.ims.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/** Loads the signed-in user slice: profile header, stats, modules, and news (with search in the screen). */
+/** Loads the signed-in user slice: profile header, stats, modules, news, and hub navigation search. */
 class DashboardViewModel(
     private val userId: String,
     private val userRepository: UserRepository = FakeUserRepository,
     private val newsRepository: NewsRepository = FakeNewsRepository,
     private val dashboardRepository: DashboardRepository = FakeDashboardRepository,
+    private val studentRepository: StudentRepository = FakeStudentRepository,
+    private val examRepository: ExamRepository = FakeExamRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -36,7 +43,7 @@ class DashboardViewModel(
                     userInitials = initialsFor(user.displayName),
                     greetingLine = greetingFor(user.displayName, user.role),
                     quickChips = dashboardRepository.getQuickChipLabels(),
-                    stats = dashboardRepository.getSummaryStats(),
+                    stats = dashboardRepository.getSummaryStats(user.role),
                     modules = dashboardRepository.getModuleCards(),
                     news = newsRepository.getNews().sortedByDescending { n -> n.publishedAtEpochMs },
                     overviewLine = dashboardRepository.getOverviewLine(user.role),
@@ -46,7 +53,105 @@ class DashboardViewModel(
     }
 
     fun onSearchQueryChange(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { s ->
+            s.copy(
+                searchQuery = query,
+                newsSpotlightId = if (query.isNotBlank()) null else s.newsSpotlightId,
+            )
+        }
+    }
+
+    fun spotlightNews(newsId: String) {
+        _uiState.update { it.copy(newsSpotlightId = newsId, searchQuery = "") }
+    }
+
+    fun clearNewsSpotlight() {
+        _uiState.update { it.copy(newsSpotlightId = null) }
+    }
+
+    /** Local-only matches for modules, students, exams, and news (hub navigation). */
+    fun navigationSuggestions(): List<DashboardNavSuggestion> {
+        val s = _uiState.value
+        val q = s.searchQuery.trim()
+        if (q.isEmpty()) return emptyList()
+        val ql = q.lowercase()
+        val out = mutableListOf<DashboardNavSuggestion>()
+        val seen = mutableSetOf<String>()
+
+        fun add(suggestion: DashboardNavSuggestion) {
+            if (seen.add(suggestion.id)) {
+                out.add(suggestion)
+            }
+        }
+
+        if (studentNavHint(ql)) {
+            add(
+                DashboardNavSuggestion(
+                    id = "nav-students",
+                    title = "Open Student Details",
+                    subtitle = "Directory, batches, and profiles",
+                    action = DashboardNavAction.OpenStudentDirectory,
+                ),
+            )
+        }
+        if (examNavHint(ql)) {
+            add(
+                DashboardNavSuggestion(
+                    id = "nav-exams",
+                    title = "Open Examinations",
+                    subtitle = "Schedule, results, and report center",
+                    action = DashboardNavAction.OpenExamList,
+                ),
+            )
+        }
+
+        studentRepository.getStudents(StudentFilterCriteria(query = q))
+            .take(4)
+            .forEach { st ->
+                add(
+                    DashboardNavSuggestion(
+                        id = "stu-${st.id}",
+                        title = "Student: ${st.name}",
+                        subtitle = "${st.studentNumber} · ${st.email}",
+                        action = DashboardNavAction.OpenStudentProfile(st.id),
+                    ),
+                )
+            }
+
+        examRepository.getExams()
+            .filter { it.title.contains(q, ignoreCase = true) }
+            .take(4)
+            .forEach { ex ->
+                add(
+                    DashboardNavSuggestion(
+                        id = "exm-${ex.id}",
+                        title = "Exam: ${ex.title}",
+                        subtitle = "${ex.examType} · ${ex.scheduleLabel}",
+                        action = DashboardNavAction.OpenExamDetail(ex.id),
+                    ),
+                )
+            }
+
+        s.news
+            .asSequence()
+            .filter { item ->
+                item.title.contains(q, ignoreCase = true) ||
+                    item.body.contains(q, ignoreCase = true) ||
+                    (item.tag?.contains(q, ignoreCase = true) == true)
+            }
+            .take(3)
+            .forEach { item ->
+                add(
+                    DashboardNavSuggestion(
+                        id = "news-${item.id}",
+                        title = "Latest news: ${item.title}",
+                        subtitle = item.tag ?: "Institute update",
+                        action = DashboardNavAction.FocusNews(item.id),
+                    ),
+                )
+            }
+
+        return out.take(12)
     }
 
     fun onQuickChipClick(label: String, onOpenStudents: () -> Unit, onOpenExams: () -> Unit) {
@@ -63,6 +168,16 @@ class DashboardViewModel(
             DashboardModuleId.STUDENTS -> onOpenStudents()
             DashboardModuleId.EXAMS -> onOpenExams()
         }
+    }
+
+    private fun studentNavHint(q: String): Boolean {
+        val hints = listOf("student", "directory", "batch", "profile", "enroll", "former", "current")
+        return hints.any { q.contains(it) }
+    }
+
+    private fun examNavHint(q: String): Boolean {
+        val hints = listOf("exam", "paper", "test", "quiz", "viva", "mid-term", "final", "grade", "mark")
+        return hints.any { q.contains(it) }
     }
 
     private fun initialsFor(displayName: String): String {

@@ -45,8 +45,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.ExamStatus
+import com.institute.ims.data.model.uiLabel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -96,7 +98,7 @@ fun CreateExamScreen(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    text = "Title, batch, assessment group, and max marks are required; use numbers only for max marks.",
+                    text = "Choose how the paper is assessed (marks, grade-based, or custom), then set category, batch, and group. Max points are required as a positive number.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -130,10 +132,10 @@ fun CreateExamScreen(
                     onExpandedChange = { typeMenu = it },
                 ) {
                     OutlinedTextField(
-                        value = state.examType,
+                        value = state.examCategory,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Exam type") },
+                        label = { Text("Exam category") },
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeMenu)
                         },
@@ -146,15 +148,38 @@ fun CreateExamScreen(
                         expanded = typeMenu,
                         onDismissRequest = { typeMenu = false },
                     ) {
-                        state.examTypes.forEach { type ->
+                        state.examCategories.forEach { cat ->
                             DropdownMenuItem(
-                                text = { Text(type) },
+                                text = { Text(cat) },
                                 onClick = {
-                                    viewModel.onExamTypeChange(type)
+                                    viewModel.onExamCategoryChange(cat)
                                     typeMenu = false
                                 },
                             )
                         }
+                    }
+                }
+
+                Text(
+                    text = "Assessment mode",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "Basis for creating this exam: numeric marks, grade-scale, or a custom rubric (separate from GPA / CCE / CWA evaluation).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    AssessmentMode.entries.forEach { mode ->
+                        FilterChip(
+                            selected = state.assessmentMode == mode,
+                            onClick = { viewModel.onAssessmentModeChange(mode) },
+                            label = { Text(mode.uiLabel()) },
+                        )
                     }
                 }
 
@@ -204,16 +229,6 @@ fun CreateExamScreen(
                     shape = MaterialTheme.shapes.large,
                 )
 
-                OutlinedTextField(
-                    value = state.maxMarksInput,
-                    onValueChange = viewModel::onMaxMarksChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Max marks") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.large,
-                )
-
                 ExposedDropdownMenuBox(
                     expanded = groupMenu,
                     onExpandedChange = { groupMenu = it },
@@ -249,7 +264,7 @@ fun CreateExamScreen(
                 }
 
                 Text(
-                    text = "Evaluation type",
+                    text = "Evaluation type (GPA / CCE / CWA)",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -265,6 +280,16 @@ fun CreateExamScreen(
                         )
                     }
                 }
+
+                OutlinedTextField(
+                    value = state.maxMarksInput,
+                    onValueChange = viewModel::onMaxMarksChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(maxScoreFieldLabel(state.assessmentMode)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.large,
+                )
 
                 OutlinedTextField(
                     value = state.scheduleLabel,
@@ -324,4 +349,10 @@ private fun statusLabel(status: ExamStatus): String = when (status) {
     ExamStatus.DRAFT -> "Draft"
     ExamStatus.PUBLISHED -> "Published"
     ExamStatus.COMPLETED -> "Completed"
+}
+
+private fun maxScoreFieldLabel(mode: AssessmentMode): String = when (mode) {
+    AssessmentMode.MARKS -> "Max marks"
+    AssessmentMode.GRADE_BASED -> "Grade scale (max points)"
+    AssessmentMode.CUSTOM -> "Rubric cap (max points)"
 }
