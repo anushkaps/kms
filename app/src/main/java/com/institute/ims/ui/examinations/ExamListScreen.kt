@@ -1,5 +1,7 @@
 package com.institute.ims.ui.examinations
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,13 +26,16 @@ import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.School
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,8 +43,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +61,7 @@ import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamStatus
 import com.institute.ims.data.model.uiLabel
+import com.institute.ims.ui.common.LedgerPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +73,19 @@ fun ExamListScreen(
     viewModel: ExamListViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    val filteredExams = remember(state.exams, searchQuery) {
+        val query = searchQuery.trim()
+        if (query.isEmpty()) {
+            state.exams
+        } else {
+            state.exams.filter { exam ->
+                exam.title.contains(query, ignoreCase = true) ||
+                    exam.subjectName.contains(query, ignoreCase = true) ||
+                    exam.batchLabel.contains(query, ignoreCase = true)
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -78,7 +102,9 @@ fun ExamListScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = LedgerPalette.Plum,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
                 ),
             )
         },
@@ -86,6 +112,8 @@ fun ExamListScreen(
             Box(modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)) {
                 ExtendedFloatingActionButton(
                     onClick = onCreateExam,
+                    containerColor = LedgerPalette.Plum,
+                    contentColor = Color.White,
                     icon = {
                         Icon(Icons.Outlined.Add, contentDescription = null)
                     },
@@ -103,9 +131,10 @@ fun ExamListScreen(
         ) {
             item {
                 Text(
-                    text = "Exam schedule",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "EXAM SCHEDULE",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = LedgerPalette.Plum,
                 )
                 Text(
                     text = "Filter by assessment group, then open a paper for details and results.",
@@ -141,18 +170,34 @@ fun ExamListScreen(
                     }
                 }
             }
+            item {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search exams...") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = LedgerPalette.Plum,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
+                        focusedContainerColor = LedgerPalette.Plum.copy(alpha = 0.1f),
+                        unfocusedContainerColor = LedgerPalette.Plum.copy(alpha = 0.1f),
+                    ),
+                )
+            }
 
-            if (state.exams.isEmpty()) {
+            if (filteredExams.isEmpty()) {
                 item {
                     Text(
-                        text = "No exams match this filter. Try another group or tap New exam to add one.",
+                        text = "No exams match this view. Try another group, search term, or add a new exam.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 24.dp),
                     )
                 }
             } else {
-                items(state.exams, key = { it.id }) { exam ->
+                items(filteredExams, key = { it.id }) { exam ->
                     ExamListCard(
                         exam = exam,
                         groupLabel = state.groups.find { it.id == exam.groupId }?.name,
@@ -170,28 +215,30 @@ private fun ExamListCard(
     groupLabel: String?,
     onClick: () -> Unit,
 ) {
-    ElevatedCard(
-        onClick = onClick,
+    Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .clickable(onClick = onClick)
+                .padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = LedgerPalette.Plum.copy(alpha = 0.14f),
                 modifier = Modifier.padding(vertical = 2.dp),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.Assignment,
                     contentDescription = null,
                     modifier = Modifier.padding(12.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = LedgerPalette.Plum,
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
@@ -203,7 +250,7 @@ private fun ExamListCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                MetaLine(Icons.Outlined.School, "${exam.examType} · ${exam.subjectName}")
+                MetaLine(Icons.Outlined.School, "${exam.examType} - ${exam.subjectName}")
                 MetaLine(Icons.Outlined.CalendarMonth, exam.scheduleLabel)
                 MetaLine(Icons.Outlined.Groups, groupLabel ?: exam.groupId)
                 Row(
@@ -214,7 +261,7 @@ private fun ExamListCard(
                     Text(
                         text = exam.batchLabel,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = LedgerPalette.Plum,
                     )
                     Text(
                         text = "·",
@@ -311,13 +358,13 @@ private fun StatusChip(status: ExamStatus) {
             "Draft",
         )
         ExamStatus.PUBLISHED -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
+            LedgerPalette.Plum.copy(alpha = 0.16f),
+            LedgerPalette.Plum,
             "Published",
         )
         ExamStatus.COMPLETED -> Triple(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.onPrimary,
+            LedgerPalette.Plum,
+            Color.White,
             "Completed",
         )
     }

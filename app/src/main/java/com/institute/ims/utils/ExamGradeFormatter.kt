@@ -4,7 +4,7 @@ import com.institute.ims.data.model.EvaluationType
 
 object ExamGradeFormatter {
     fun label(score: Double, maxScore: Double, evaluationType: EvaluationType): String {
-        if (maxScore <= 0) return "—"
+        if (maxScore <= 0) return "-"
         val pct = (score / maxScore).coerceIn(0.0, 1.0) * 100.0
         return when (evaluationType) {
             EvaluationType.GPA -> letterGrade(pct)

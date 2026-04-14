@@ -1,5 +1,6 @@
 package com.institute.ims.ui.examinations
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +49,7 @@ import com.institute.ims.data.model.ExamAnalytics
 import com.institute.ims.data.model.ExamStatus
 import com.institute.ims.data.model.uiLabel
 import com.institute.ims.data.model.ScoreBucket
+import com.institute.ims.ui.common.LedgerPalette
 import com.institute.ims.utils.ExamAnalyticsCalculator
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +75,7 @@ fun ReportScreen(
                         Text(
                             text = "Report center",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color(0xFFFFE7CC),
                         )
                         Text(
                             text = state.exam?.title ?: "Report",
@@ -89,7 +93,9 @@ fun ReportScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = LedgerPalette.Amber,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
                 ),
             )
         },
@@ -154,7 +160,7 @@ private fun ReportBody(
     ) {
         item {
             Text(
-                text = "On-demand reports — pick a view below. All sections use the same local results snapshot.",
+                text = "On-demand reports: pick a view below. All sections use the same local results snapshot.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -228,9 +234,10 @@ private fun ReportBody(
 @Composable
 private fun SectionTitle(text: String) {
     Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Medium,
+        color = LedgerPalette.Amber,
         modifier = Modifier.padding(bottom = 6.dp),
     )
 }
@@ -243,7 +250,7 @@ private fun ReportMetadataCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
@@ -271,13 +278,13 @@ private fun ReportMetadataCard(
                 }
                 Surface(
                     shape = RoundedCornerShape(percent = 50),
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = LedgerPalette.Amber.copy(alpha = 0.14f),
                 ) {
                     Text(
                         text = reportStatusLabel(exam.status),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = LedgerPalette.Amber,
                     )
                 }
             }
@@ -299,8 +306,8 @@ private fun ReportDetailLine(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
@@ -363,19 +370,29 @@ private fun ReportCenterTabRow(
             selected = selected == ReportCenterTab.QUICK_SUMMARY,
             onClick = { onSelect(ReportCenterTab.QUICK_SUMMARY) },
             label = { Text("Quick summary") },
+            colors = reportTabColors(),
         )
         FilterChip(
             selected = selected == ReportCenterTab.PERFORMANCE_OVERVIEW,
             onClick = { onSelect(ReportCenterTab.PERFORMANCE_OVERVIEW) },
             label = { Text("Performance overview") },
+            colors = reportTabColors(),
         )
         FilterChip(
             selected = selected == ReportCenterTab.RESULT_DISTRIBUTION,
             onClick = { onSelect(ReportCenterTab.RESULT_DISTRIBUTION) },
             label = { Text("Result distribution") },
+            colors = reportTabColors(),
         )
     }
 }
+
+@Composable
+private fun reportTabColors() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = LedgerPalette.Amber,
+    selectedLabelColor = Color.White,
+    containerColor = MaterialTheme.colorScheme.surface,
+)
 
 @Composable
 private fun ReportEmptyQuickStats() {
@@ -429,7 +446,7 @@ private fun ReportQuickStatsGrid(analytics: ExamAnalytics) {
             )
             StatMiniCard(
                 label = "Pass rate",
-                value = analytics.passPercentage?.let { ExamAnalyticsCalculator.formatPercent(it) } ?: "—",
+                value = analytics.passPercentage?.let { ExamAnalyticsCalculator.formatPercent(it) } ?: "-",
                 modifier = Modifier.weight(1f),
             )
         }
@@ -490,7 +507,7 @@ private fun ReportPerformanceOverview(
             }
         } else {
             Text(
-                text = "No letter-grade rows yet — labels appear once marks are stored.",
+                text = "No letter-grade rows yet; labels appear once marks are stored.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -512,7 +529,7 @@ private fun ReportDistributionEmpty() {
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Preview — bars fill once scores exist.",
+                text = "Preview: bars fill once scores exist.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -580,7 +597,7 @@ private fun ReportDistributionSection(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = "Unavailable until max marks is set — bucket layout preview:",
+                            text = "Unavailable until max marks is set. Bucket layout preview:",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -604,7 +621,7 @@ private fun StatMiniCard(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
@@ -654,7 +671,11 @@ private fun BucketBarRow(
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth(frac)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.88f)),
+                    .background(
+                        LedgerPalette.Plum.copy(
+                            alpha = (0.35f + (0.55f * frac)).coerceIn(0.35f, 0.9f),
+                        ),
+                    ),
             )
         }
     }

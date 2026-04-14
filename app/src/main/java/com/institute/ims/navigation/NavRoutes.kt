@@ -10,8 +10,12 @@ object NavRoutes {
     const val CreateExam = "create_exam"
     const val ExamDetail = "exam_detail/{examId}"
     const val Report = "report/{examId}"
+    const val RegionalSettings = "regional_settings"
+    const val CapabilityInfo = "capability_info/{stubId}"
 
     fun dashboard(userId: String): String = "dashboard/${encode(userId)}"
+
+    fun capabilityInfo(stubId: String): String = "capability_info/${encode(stubId)}"
 
     fun studentProfile(studentId: String): String = "student_profile/${encode(studentId)}"
 

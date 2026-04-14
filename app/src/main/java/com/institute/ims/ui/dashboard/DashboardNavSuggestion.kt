@@ -11,6 +11,7 @@ data class DashboardNavSuggestion(
 sealed class DashboardNavAction {
     data object OpenStudentDirectory : DashboardNavAction()
     data object OpenExamList : DashboardNavAction()
+    data object OpenRegionalSettings : DashboardNavAction()
     data class OpenStudentProfile(val studentId: String) : DashboardNavAction()
     data class OpenExamDetail(val examId: String) : DashboardNavAction()
     data class FocusNews(val newsId: String) : DashboardNavAction()

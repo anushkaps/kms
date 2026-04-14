@@ -21,7 +21,7 @@ object FakeNewsRepository : NewsRepository {
         ),
         NewsItem(
             id = "news-3",
-            title = "Campus network maintenance — brief outage",
+            title = "Campus network maintenance - brief outage",
             body = "IT will perform upgrades Sunday 02:00–04:00. IMS remains available on mobile data.",
             publishedAtEpochMs = 1_712_172_800_000L,
             tag = "IT",

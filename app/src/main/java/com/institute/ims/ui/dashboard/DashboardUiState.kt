@@ -1,5 +1,6 @@
 package com.institute.ims.ui.dashboard
 
+import com.institute.ims.data.model.DashboardCapabilityHighlight
 import com.institute.ims.data.model.DashboardModuleCard
 import com.institute.ims.data.model.DashboardStat
 import com.institute.ims.data.model.NewsItem
@@ -17,6 +18,8 @@ data class DashboardUiState(
     val quickChips: List<String> = emptyList(),
     val stats: List<DashboardStat> = emptyList(),
     val modules: List<DashboardModuleCard> = emptyList(),
+    val capabilityHighlights: List<DashboardCapabilityHighlight> = emptyList(),
     val news: List<NewsItem> = emptyList(),
     val overviewLine: String = "",
+    val regionalSummaryLine: String = "",
 )

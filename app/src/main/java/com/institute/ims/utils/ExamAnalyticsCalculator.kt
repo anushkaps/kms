@@ -45,7 +45,7 @@ object ExamAnalyticsCalculator {
         }
 
         val gradeBreakdown = results
-            .groupBy { it.gradeLabel ?: "—" }
+            .groupBy { it.gradeLabel ?: "-" }
             .map { (label, rows) -> label to rows.size }
             .sortedByDescending { it.second }
 
