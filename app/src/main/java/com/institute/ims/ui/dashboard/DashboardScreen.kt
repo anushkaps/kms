@@ -1,5 +1,7 @@
 package com.institute.ims.ui.dashboard
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material.icons.outlined.Newspaper
@@ -48,11 +51,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -60,9 +68,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.institute.ims.data.model.DashboardCapabilityAction
+import com.institute.ims.data.model.DashboardCapabilityHighlight
 import com.institute.ims.data.model.DashboardStat
 import com.institute.ims.data.model.NewsItem
 import com.institute.ims.data.model.UserRole
+import com.institute.ims.ui.common.LedgerPalette
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -76,6 +87,8 @@ fun DashboardScreen(
     onOpenExams: () -> Unit,
     onOpenStudentProfile: (studentId: String) -> Unit,
     onOpenExamDetail: (examId: String) -> Unit,
+    onOpenRegionalSettings: () -> Unit,
+    onOpenCapabilityInfo: (stubId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: DashboardViewModel = viewModel(
@@ -84,6 +97,8 @@ fun DashboardScreen(
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val recentSuggestions = remember { mutableStateListOf<DashboardNavSuggestion>() }
+    var searchPaletteVisible by rememberSaveable { mutableStateOf(false) }
 
     val queryTrimmed = uiState.searchQuery.trim()
     val navSuggestions = remember(uiState.searchQuery, uiState.news) {
@@ -102,6 +117,9 @@ fun DashboardScreen(
                         (item.tag?.contains(queryTrimmed, ignoreCase = true) == true)
                 }
         }
+    }
+    BackHandler(enabled = searchPaletteVisible) {
+        searchPaletteVisible = false
     }
 
     fun applySuggestion(s: DashboardNavSuggestion) {
@@ -126,6 +144,31 @@ fun DashboardScreen(
             is DashboardNavAction.FocusNews -> {
                 viewModel.spotlightNews(a.newsId)
             }
+            DashboardNavAction.OpenRegionalSettings -> {
+                viewModel.onSearchQueryChange("")
+                onOpenRegionalSettings()
+            }
+        }
+    }
+
+    fun applySuggestionFromPalette(suggestion: DashboardNavSuggestion) {
+        recentSuggestions.removeAll { it.id == suggestion.id }
+        recentSuggestions.add(0, suggestion)
+        if (recentSuggestions.size > 4) {
+            recentSuggestions.subList(4, recentSuggestions.size).clear()
+        }
+        searchPaletteVisible = false
+        applySuggestion(suggestion)
+    }
+
+    fun applyCapabilityAction(action: DashboardCapabilityAction) {
+        focusManager.clearFocus()
+        when (action) {
+            DashboardCapabilityAction.OPEN_STUDENTS -> onOpenStudents()
+            DashboardCapabilityAction.OPEN_EXAMS -> onOpenExams()
+            DashboardCapabilityAction.OPEN_REGIONAL -> onOpenRegionalSettings()
+            DashboardCapabilityAction.OPEN_ADMISSION_SMS_INFO ->
+                onOpenCapabilityInfo("admission_sms")
         }
     }
 
@@ -159,42 +202,45 @@ fun DashboardScreen(
 
             item {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = viewModel::onSearchQueryChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Hub search") },
-                        placeholder = {
-                            Text("Try “student”, “exam”, a name, or a news title…")
-                        },
-                        supportingText = {
-                            Text("Jump to modules, open a record, or spotlight a news item — all local demo data.")
-                        },
-                        leadingIcon = {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { searchPaletteVisible = true },
+                        shape = MaterialTheme.shapes.extraLarge,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        color = MaterialTheme.colorScheme.surface,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
                             Icon(
                                 imageVector = Icons.Outlined.Search,
                                 contentDescription = "Search",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.extraLarge,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(
-                            onSearch = { focusManager.clearFocus() },
-                        ),
-                    )
-                    if (navSuggestions.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        HubSearchSuggestionsCard(
-                            suggestions = navSuggestions,
-                            onPick = ::applySuggestion,
-                        )
+                            Text(
+                                text = uiState.searchQuery.ifBlank { "Search students, exams..." },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = "Open",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
+                    Text(
+                        text = "Command palette for quick jump navigation.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp, start = 4.dp),
+                    )
                 }
             }
 
@@ -226,6 +272,16 @@ fun DashboardScreen(
                 }
             }
 
+            item {
+                RegionalSettingsSummaryCard(
+                    summaryLine = uiState.regionalSummaryLine,
+                    onOpenSettings = {
+                        focusManager.clearFocus()
+                        onOpenRegionalSettings()
+                    },
+                )
+            }
+
             item { SectionTitle("Modules") }
 
             items(uiState.modules, key = { it.id }) { card ->
@@ -244,7 +300,7 @@ fun DashboardScreen(
                     shape = MaterialTheme.shapes.large,
                     elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
                     colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
+                        containerColor = moduleAccent(card.id.name),
                     ),
                 ) {
                     Row(
@@ -256,14 +312,14 @@ fun DashboardScreen(
                     ) {
                         Surface(
                             shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = Color.White.copy(alpha = 0.16f),
                             modifier = Modifier.size(48.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = moduleIcon(card.id.name),
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    tint = moduleAccentContent(card.id.name),
                                 )
                             }
                         }
@@ -272,12 +328,13 @@ fun DashboardScreen(
                                 text = card.title,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
+                                color = moduleAccentContent(card.id.name),
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = card.description,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = moduleAccentContent(card.id.name).copy(alpha = 0.9f),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -285,24 +342,72 @@ fun DashboardScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = moduleAccentContent(card.id.name).copy(alpha = 0.75f),
                         )
                     }
                 }
             }
 
             item {
-                SectionTitle("Quick stats")
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    uiState.stats.forEach { stat ->
-                        DashboardStatMiniCard(
-                            stat = stat,
-                            icon = statIcon(stat.id),
-                            modifier = Modifier.weight(1f),
-                        )
+                SectionTitle("Institute capabilities (full IMS scope)")
+                Text(
+                    text = "Reference cards for everything the hub is meant to represent. Interactive flows are linked where this prototype implements them.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+
+            items(
+                uiState.capabilityHighlights,
+                key = { it.id },
+            ) { cap ->
+                CapabilityHighlightCard(
+                    highlight = cap,
+                    onAction = cap.action?.let { act ->
+                        { applyCapabilityAction(act) }
+                    },
+                )
+            }
+
+            item {
+                SectionTitle("Overview")
+                val topStats = uiState.stats.take(4)
+                val rowA = topStats.take(2)
+                val rowB = topStats.drop(2).take(2)
+                if (rowA.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        rowA.forEach { stat ->
+                            DashboardStatMiniCard(
+                                stat = stat,
+                                icon = statIcon(stat.id),
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (rowA.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+                if (rowB.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        rowB.forEach { stat ->
+                            DashboardStatMiniCard(
+                                stat = stat,
+                                icon = statIcon(stat.id),
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (rowB.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -343,9 +448,10 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Latest news",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        text = "LATEST NEWS",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (uiState.newsSpotlightId != null) {
                         TextButton(onClick = { viewModel.clearNewsSpotlight() }) {
@@ -380,6 +486,218 @@ fun DashboardScreen(
                     )
                 }
             }
+        }
+        AnimatedVisibility(visible = searchPaletteVisible) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                ) {
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = viewModel::onSearchQueryChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Search students, exams, news") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = null,
+                            )
+                        },
+                        trailingIcon = {
+                            TextButton(onClick = { searchPaletteVisible = false }) {
+                                Text("Done")
+                            }
+                        },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.extraLarge,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                    )
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (recentSuggestions.isNotEmpty()) {
+                            item { SectionTitle("Recent") }
+                            item {
+                                HubSearchSuggestionsCard(
+                                    suggestions = recentSuggestions,
+                                    onPick = ::applySuggestionFromPalette,
+                                )
+                            }
+                        }
+                        item { SectionTitle("Jump to") }
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                SuggestionChip(
+                                    onClick = {
+                                        searchPaletteVisible = false
+                                        viewModel.onSearchQueryChange("")
+                                        onOpenStudents()
+                                    },
+                                    label = { Text("Students") },
+                                )
+                                SuggestionChip(
+                                    onClick = {
+                                        searchPaletteVisible = false
+                                        viewModel.onSearchQueryChange("")
+                                        onOpenExams()
+                                    },
+                                    label = { Text("Exams") },
+                                )
+                                SuggestionChip(
+                                    onClick = {
+                                        searchPaletteVisible = false
+                                        viewModel.onSearchQueryChange("news")
+                                    },
+                                    label = { Text("News") },
+                                )
+                            }
+                        }
+                        if (uiState.searchQuery.isNotBlank()) {
+                            item { SectionTitle("Results") }
+                            if (navSuggestions.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No matches yet. Try student name, ID, exam title, or module keywords.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else {
+                                item {
+                                    HubSearchSuggestionsCard(
+                                        suggestions = navSuggestions,
+                                        onPick = ::applySuggestionFromPalette,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CapabilityHighlightCard(
+    highlight: DashboardCapabilityHighlight,
+    onAction: (() -> Unit)?,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = highlight.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            highlight.lines.forEach { line ->
+                Row(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = "\u2022",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = line,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            if (onAction != null && highlight.actionLabel != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = onAction) {
+                    Text(highlight.actionLabel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegionalSettingsSummaryCard(
+    summaryLine: String,
+    onOpenSettings: () -> Unit,
+) {
+    ElevatedCard(
+        onClick = onOpenSettings,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.size(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Language,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Language & region",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = summaryLine.ifBlank { "Tap to set language, country, currency, and time zone." },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+            )
         }
     }
 }
@@ -450,7 +768,7 @@ private fun DashboardHeader(
     instituteSubtitle: String,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+        color = LedgerPalette.Ink,
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         Row(
@@ -478,13 +796,14 @@ private fun DashboardHeader(
                 Text(
                     text = instituteSubtitle,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFFA8A090),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = displayName,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFF3EEE1),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -492,14 +811,14 @@ private fun DashboardHeader(
                     Text(
                         text = roleLabel(r),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = LedgerPalette.Cobalt,
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = greetingLine,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFFD3CCBC),
                 )
             }
         }
@@ -509,9 +828,10 @@ private fun DashboardHeader(
 @Composable
 private fun SectionTitle(text: String) {
     Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 20.dp, bottom = 10.dp),
     )
 }
@@ -647,4 +967,18 @@ private fun statIcon(statId: String): ImageVector = when (statId) {
 private fun moduleIcon(moduleIdName: String): ImageVector = when (moduleIdName) {
     "STUDENTS" -> Icons.Outlined.School
     else -> Icons.AutoMirrored.Outlined.Assignment
+}
+
+private fun moduleAccent(moduleIdName: String): Color = when (moduleIdName) {
+    "STUDENTS" -> LedgerPalette.Forest
+    "EXAMS" -> LedgerPalette.Plum
+    "REPORTS" -> LedgerPalette.Amber
+    else -> LedgerPalette.Cobalt
+}
+
+private fun moduleAccentContent(moduleIdName: String): Color {
+    return when (moduleIdName) {
+        "REPORTS" -> Color.White
+        else -> Color.White
+    }
 }

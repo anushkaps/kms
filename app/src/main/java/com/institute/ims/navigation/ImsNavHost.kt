@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.institute.ims.data.repository.FakeUserRepository
+import com.institute.ims.ui.common.CapabilityInfoScreen
 import com.institute.ims.ui.common.RoleSelectScreen
 import com.institute.ims.ui.common.SplashScreen
 import com.institute.ims.ui.dashboard.DashboardScreen
@@ -19,6 +20,7 @@ import com.institute.ims.ui.examinations.CreateExamScreen
 import com.institute.ims.ui.examinations.ExamDetailScreen
 import com.institute.ims.ui.examinations.ExamListScreen
 import com.institute.ims.ui.examinations.ReportScreen
+import com.institute.ims.ui.settings.RegionalSettingsScreen
 import com.institute.ims.ui.studentdetails.StudentListScreen
 import com.institute.ims.ui.studentdetails.StudentProfileScreen
 
@@ -83,8 +85,34 @@ fun ImsNavHost(
                     onOpenExamDetail = { examId ->
                         navController.navigate(NavRoutes.examDetail(examId))
                     },
+                    onOpenRegionalSettings = {
+                        navController.navigate(NavRoutes.RegionalSettings)
+                    },
+                    onOpenCapabilityInfo = { stubId ->
+                        navController.navigate(NavRoutes.capabilityInfo(stubId))
+                    },
                 )
             }
+        }
+
+        composable(
+            route = NavRoutes.CapabilityInfo,
+            arguments = listOf(
+                navArgument("stubId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val raw = entry.arguments?.getString("stubId").orEmpty()
+            val stubId = android.net.Uri.decode(raw)
+            CapabilityInfoScreen(
+                stubId = stubId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(NavRoutes.RegionalSettings) {
+            RegionalSettingsScreen(
+                onBack = { navController.popBackStack() },
+            )
         }
 
         composable(NavRoutes.StudentList) {

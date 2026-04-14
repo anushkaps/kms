@@ -23,7 +23,7 @@ object FakeExamRepository : ExamRepository {
     private val exams = mutableListOf(
         Exam(
             id = "exam-001",
-            title = "Data Structures — Mid-term",
+            title = "Data Structures - Mid-term",
             examType = "Mid-term",
             batchId = "batch-2024",
             batchLabel = "Computer Science 2024 (CS-24)",
@@ -37,7 +37,7 @@ object FakeExamRepository : ExamRepository {
         ),
         Exam(
             id = "exam-002",
-            title = "Operating Systems — Pop Quiz",
+            title = "Operating Systems - Pop Quiz",
             examType = "Quiz",
             batchId = "batch-2023",
             batchLabel = "Computer Science 2023 (CS-23)",
@@ -51,7 +51,7 @@ object FakeExamRepository : ExamRepository {
         ),
         Exam(
             id = "exam-003",
-            title = "Design & Analysis of Algorithms — Final",
+            title = "Design & Analysis of Algorithms - Final",
             examType = "Final",
             batchId = "batch-2024",
             batchLabel = "Computer Science 2024 (CS-24)",
@@ -65,7 +65,7 @@ object FakeExamRepository : ExamRepository {
         ),
         Exam(
             id = "exam-004",
-            title = "Database Systems — Viva",
+            title = "Database Systems - Viva",
             examType = "Viva",
             batchId = "batch-2024",
             batchLabel = "Computer Science 2024 (CS-24)",

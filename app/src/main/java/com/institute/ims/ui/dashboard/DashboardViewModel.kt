@@ -2,6 +2,8 @@ package com.institute.ims.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.institute.ims.data.catalog.RegionalCatalog
 import com.institute.ims.data.model.DashboardModuleId
 import com.institute.ims.data.model.StudentFilterCriteria
 import com.institute.ims.data.model.UserRole
@@ -10,6 +12,7 @@ import com.institute.ims.data.repository.ExamRepository
 import com.institute.ims.data.repository.FakeDashboardRepository
 import com.institute.ims.data.repository.FakeExamRepository
 import com.institute.ims.data.repository.FakeNewsRepository
+import com.institute.ims.data.repository.FakeRegionalPreferencesRepository
 import com.institute.ims.data.repository.FakeStudentRepository
 import com.institute.ims.data.repository.FakeUserRepository
 import com.institute.ims.data.repository.NewsRepository
@@ -18,7 +21,9 @@ import com.institute.ims.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /** Loads the signed-in user slice: profile header, stats, modules, news, and hub navigation search. */
 class DashboardViewModel(
@@ -45,9 +50,20 @@ class DashboardViewModel(
                     quickChips = dashboardRepository.getQuickChipLabels(),
                     stats = dashboardRepository.getSummaryStats(user.role),
                     modules = dashboardRepository.getModuleCards(),
+                    capabilityHighlights = dashboardRepository.getCapabilityHighlights(),
                     news = newsRepository.getNews().sortedByDescending { n -> n.publishedAtEpochMs },
                     overviewLine = dashboardRepository.getOverviewLine(user.role),
+                    regionalSummaryLine = RegionalCatalog.summaryLine(
+                        FakeRegionalPreferencesRepository.prefsFlow.value,
+                    ),
                 )
+            }
+        }
+        viewModelScope.launch {
+            FakeRegionalPreferencesRepository.prefsFlow.collectLatest { p ->
+                _uiState.update {
+                    it.copy(regionalSummaryLine = RegionalCatalog.summaryLine(p))
+                }
             }
         }
     }
@@ -101,6 +117,16 @@ class DashboardViewModel(
                     title = "Open Examinations",
                     subtitle = "Schedule, results, and report center",
                     action = DashboardNavAction.OpenExamList,
+                ),
+            )
+        }
+        if (regionalNavHint(ql)) {
+            add(
+                DashboardNavSuggestion(
+                    id = "nav-regional",
+                    title = "Language & region settings",
+                    subtitle = "Country, currency, time zone",
+                    action = DashboardNavAction.OpenRegionalSettings,
                 ),
             )
         }
@@ -180,6 +206,20 @@ class DashboardViewModel(
         return hints.any { q.contains(it) }
     }
 
+    private fun regionalNavHint(q: String): Boolean {
+        val hints = listOf(
+            "language",
+            "locale",
+            "country",
+            "currency",
+            "timezone",
+            "time zone",
+            "region",
+            "i18n",
+        )
+        return hints.any { q.contains(it) }
+    }
+
     private fun initialsFor(displayName: String): String {
         val parts = displayName.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         return when {
@@ -197,7 +237,7 @@ class DashboardViewModel(
             UserRole.ADMIN -> "Here is your institute overview"
             UserRole.FACULTY -> "Here is your teaching workspace"
         }
-        return "Hello, $first — $tone."
+        return "Hello, $first - $tone."
     }
 
     class Factory(

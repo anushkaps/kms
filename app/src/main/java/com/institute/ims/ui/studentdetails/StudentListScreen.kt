@@ -1,6 +1,7 @@
 package com.institute.ims.ui.studentdetails
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.horizontalScroll
@@ -29,7 +30,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CardDefaults.cardColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -52,12 +53,14 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.Batch
 import com.institute.ims.data.model.Student
 import com.institute.ims.data.model.StudentStatus
+import com.institute.ims.ui.common.LedgerPalette
 import com.institute.ims.utils.studentCategoryShortLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +94,10 @@ fun StudentListScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = LedgerPalette.Forest,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White,
                 ),
             )
         },
@@ -108,8 +114,7 @@ fun StudentListScreen(
                     value = state.searchQuery,
                     onValueChange = viewModel::onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Quick search") },
-                    placeholder = { Text("Name, student ID, or email…") },
+                    placeholder = { Text("Search by name, roll no...") },
                     leadingIcon = {
                         Icon(
                             Icons.Outlined.Search,
@@ -119,8 +124,10 @@ fun StudentListScreen(
                     singleLine = true,
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = LedgerPalette.Forest,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedContainerColor = LedgerPalette.Forest.copy(alpha = 0.08f),
+                        unfocusedContainerColor = LedgerPalette.Forest.copy(alpha = 0.08f),
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
@@ -192,9 +199,13 @@ fun StudentListScreen(
                 Card(
                     onClick = { viewModel.onToggleAdvancedPanel() },
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        containerColor = LedgerPalette.Surface,
                     ),
                     shape = MaterialTheme.shapes.large,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant,
+                    ),
                 ) {
                     Row(
                         modifier = Modifier
@@ -315,6 +326,7 @@ fun StudentListScreen(
                         text = "Directory",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
+                        color = LedgerPalette.Forest,
                     )
                     Text(
                         text = "${state.students.size} shown",
@@ -354,9 +366,9 @@ fun StudentListScreen(
 @Composable
 private fun SectionLabel(text: String) {
     Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = LedgerPalette.Forest,
         modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
     )
 }
@@ -367,34 +379,34 @@ private fun StudentRowCard(
     batch: Batch?,
     onClick: () -> Unit,
 ) {
-    ElevatedCard(
-        onClick = onClick,
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 3.dp)
+            .clickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+        colors = cardColors(
+            containerColor = LedgerPalette.Surface,
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Surface(
                 shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = LedgerPalette.Forest.copy(alpha = 0.12f),
                 modifier = Modifier.size(44.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.Person,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = LedgerPalette.Forest,
                     )
                 }
             }
@@ -420,7 +432,7 @@ private fun StudentRowCard(
                     Text(
                         text = batch?.code ?: student.batchId,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = LedgerPalette.Forest,
                     )
                     StatusPill(student.status)
                     Text(
@@ -443,14 +455,14 @@ private fun StudentRowCard(
 private fun StatusPill(status: StudentStatus) {
     val (label, container, content) = when (status) {
         StudentStatus.CURRENT -> Triple(
-            "Current",
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.onPrimaryContainer,
+            "Active",
+            LedgerPalette.Forest.copy(alpha = 0.15f),
+            LedgerPalette.Forest,
         )
         StudentStatus.FORMER -> Triple(
-            "Former",
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
+            "Alum",
+            Color(0xFFFBE8EA),
+            Color(0xFF9A3A48),
         )
     }
     Surface(

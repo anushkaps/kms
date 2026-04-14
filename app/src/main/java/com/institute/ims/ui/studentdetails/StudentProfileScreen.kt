@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,12 +37,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.Student
 import com.institute.ims.data.model.StudentStatus
+import com.institute.ims.ui.common.LedgerPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +79,9 @@ fun StudentProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = LedgerPalette.Forest,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
                 ),
             )
         },
@@ -142,7 +147,7 @@ private fun StudentProfileBody(
         }
         item {
             InfoSectionCard(
-                title = "Academic",
+                title = "Academic status",
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.School,
@@ -159,7 +164,7 @@ private fun StudentProfileBody(
         }
         item {
             InfoSectionCard(
-                title = "Contact",
+                title = "Identity",
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Email,
@@ -201,25 +206,26 @@ private fun ProfileHero(
 ) {
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+        color = LedgerPalette.Forest,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.Start,
         ) {
             Box(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center,
+                    .background(Color.White.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.CenterStart,
             ) {
                 Text(
                     text = initials(student.name),
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = Color.White,
                     fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.Center),
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -227,18 +233,19 @@ private fun ProfileHero(
                 text = student.name,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
+                color = Color.White,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = student.studentNumber,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color(0xFFE5F4EE),
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = batchDisplay ?: student.batchId,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = Color(0xFFD5EEE5),
             )
             Spacer(modifier = Modifier.height(8.dp))
             StatusBadge(student.status)
@@ -250,12 +257,13 @@ private fun ProfileHero(
                 Icon(
                     imageVector = Icons.Outlined.Email,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = Color(0xFFE5F4EE),
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
                     text = student.email,
                     style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
                 )
             }
         }
@@ -266,14 +274,14 @@ private fun ProfileHero(
 private fun StatusBadge(status: StudentStatus) {
     val (label, bg, fg) = when (status) {
         StudentStatus.CURRENT -> Triple(
-            "Current student",
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.onPrimary,
+            "Active",
+            Color.White.copy(alpha = 0.2f),
+            Color.White,
         )
         StudentStatus.FORMER -> Triple(
-            "Former student",
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
+            "Alumni",
+            Color(0xFFFFE7EB),
+            Color(0xFF9C3A4A),
         )
     }
     Surface(
@@ -298,8 +306,8 @@ private fun InfoSectionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(containerColor = LedgerPalette.Surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -308,9 +316,10 @@ private fun InfoSectionCard(
             ) {
                 leadingIcon?.invoke()
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    text = title.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = LedgerPalette.Forest,
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -323,8 +332,8 @@ private fun InfoSectionCard(
 private fun ProfileRow(label: String, value: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(

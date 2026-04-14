@@ -1,5 +1,6 @@
 package com.institute.ims.ui.examinations
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -34,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +47,7 @@ import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.uiLabel
 import com.institute.ims.data.model.ExamResult
 import com.institute.ims.data.model.ExamStatus
+import com.institute.ims.ui.common.LedgerPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +87,10 @@ fun ExamDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = LedgerPalette.Plum,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White,
                 ),
             )
         },
@@ -171,6 +178,10 @@ private fun ExamDetailBody(
             FilledTonalButton(
                 onClick = onOpenReport,
                 modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = LedgerPalette.Amber,
+                    contentColor = Color.White,
+                ),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -181,7 +192,7 @@ private fun ExamDetailBody(
                         contentDescription = null,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Report center & analytics")
+                    Text("View report ->")
                 }
             }
         }
@@ -215,7 +226,7 @@ private fun SummaryHeader(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
@@ -235,13 +246,13 @@ private fun SummaryHeader(
                 }
                 Surface(
                     shape = RoundedCornerShape(percent = 50),
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = LedgerPalette.Plum.copy(alpha = 0.16f),
                 ) {
                     Text(
                         text = statusLabel(exam.status),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = LedgerPalette.Plum,
                     )
                 }
             }
@@ -270,8 +281,8 @@ private fun DetailLine(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
@@ -291,7 +302,7 @@ private fun ResultRowCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
