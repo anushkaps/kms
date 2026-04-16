@@ -12,3 +12,10 @@ fun AssessmentMode.uiLabel(): String = when (this) {
     AssessmentMode.GRADE_BASED -> "Grade-based"
     AssessmentMode.CUSTOM -> "Custom"
 }
+
+/** Short chip labels so format selectors fit on narrow layouts. */
+fun AssessmentMode.shortFormatLabel(): String = when (this) {
+    AssessmentMode.MARKS -> "Marks"
+    AssessmentMode.GRADE_BASED -> "Grade"
+    AssessmentMode.CUSTOM -> "Custom"
+}

@@ -1,0 +1,48 @@
+# Gradle
+.gradle/
+**/build/
+
+# Local machine / SDK path (never commit)
+local.properties
+
+# Android Studio / IntelliJ
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/inspectionProfiles/
+.idea/deploymentTargetSelector.xml
+.idea/appInsightsSettings.xml
+*.ipr
+*.iws
+
+# Kotlin
+.kotlin/
+
+# NDK / CMake
+.externalNativeBuild/
+.cxx/
+
+# Outputs & packaging
+*.apk
+*.aar
+*.ap_
+*.dex
+*.class
+
+# Signing (do not commit secrets)
+*.jks
+*.keystore
+
+# Logs & temp
+*.log
+*.tmp
+*.temp
+captures/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,13 +37,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamResult
 import com.institute.ims.data.model.uiLabel
 import com.institute.ims.ui.common.LedgerPalette
+import com.institute.ims.utils.ExamAnalyticsCalculator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,7 +143,7 @@ private fun ExamDetailBody(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = LedgerPalette.Plum),
             ) {
-                Text("+ Add Student Results")
+                Text("Enter results")
             }
         }
     }
@@ -158,7 +160,6 @@ private fun SummaryHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(LedgerPalette.Plum)
-            .statusBarsPadding()
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -224,32 +225,55 @@ private fun SummaryHeader(
         )
 
         Row(modifier = Modifier.fillMaxWidth()) {
-            HeaderStat(
-                value = exam.maxScore.toInt().toString(),
-                label = "Max marks",
-                modifier = Modifier.weight(1f),
-            )
-            Surface(
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .height(40.dp)
-                    .width(1.dp),
-                color = Color.White.copy(alpha = 0.35f),
-                content = {},
-            )
-            HeaderStat(
-                value = ((exam.maxScore * 0.4).toInt()).toString(),
-                label = "Pass",
-                modifier = Modifier.weight(1f),
-            )
-            Surface(
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .height(40.dp)
-                    .width(1.dp),
-                color = Color.White.copy(alpha = 0.35f),
-                content = {},
-            )
+            when (exam.assessmentMode) {
+                AssessmentMode.MARKS -> {
+                    val passLine = exam.passMarksThreshold?.toInt()
+                        ?: (exam.maxScore * ExamAnalyticsCalculator.PASS_MARK_FRACTION).toInt()
+                    HeaderStat(
+                        value = exam.maxScore.toInt().toString(),
+                        label = "Total marks",
+                        modifier = Modifier.weight(1f),
+                    )
+                    HeaderDivider()
+                    HeaderStat(
+                        value = passLine.toString(),
+                        label = "Pass marks",
+                        modifier = Modifier.weight(1f),
+                    )
+                    HeaderDivider()
+                }
+                AssessmentMode.GRADE_BASED -> {
+                    HeaderStat(
+                        value = exam.gradeSchemeName ?: "—",
+                        label = "Grade scheme",
+                        modifier = Modifier.weight(1f),
+                        valueMaxLines = 2,
+                    )
+                    HeaderDivider()
+                    HeaderStat(
+                        value = exam.passingGradeLabel ?: "—",
+                        label = "Passing grade",
+                        modifier = Modifier.weight(1f),
+                    )
+                    HeaderDivider()
+                }
+                AssessmentMode.CUSTOM -> {
+                    HeaderStat(
+                        value = exam.customSchemeName ?: "—",
+                        label = "Custom scheme",
+                        modifier = Modifier.weight(1f),
+                        valueMaxLines = 2,
+                    )
+                    HeaderDivider()
+                    HeaderStat(
+                        value = exam.customCriteriaSummary ?: "—",
+                        label = "Criteria",
+                        modifier = Modifier.weight(1f),
+                        valueMaxLines = 2,
+                    )
+                    HeaderDivider()
+                }
+            }
             HeaderStat(
                 value = resultsCount.toString(),
                 label = "Results",
@@ -272,10 +296,23 @@ private fun HeaderChip(text: String) {
 }
 
 @Composable
+private fun HeaderDivider() {
+    Surface(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .height(40.dp)
+            .width(1.dp),
+        color = Color.White.copy(alpha = 0.35f),
+        content = {},
+    )
+}
+
+@Composable
 private fun HeaderStat(
     value: String,
     label: String,
     modifier: Modifier = Modifier,
+    valueMaxLines: Int = 1,
 ) {
     Column(
         modifier = modifier,
@@ -286,6 +323,9 @@ private fun HeaderStat(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             color = Color.White,
+            maxLines = valueMaxLines,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
         )
         Text(
             text = label.uppercase(),
@@ -311,12 +351,30 @@ private fun ExamDetailCard(exam: Exam, groupName: String?) {
                 color = LedgerPalette.Plum,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            DetailLine("Group", groupName ?: exam.groupId)
+            DetailLine("Assessment group", groupName ?: exam.groupId)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            DetailLine("Total marks", exam.maxScore.toInt().toString())
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            DetailLine("Pass threshold", "${(exam.maxScore * 0.4).toInt()} marks")
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            when (exam.assessmentMode) {
+                AssessmentMode.MARKS -> {
+                    val passLine = exam.passMarksThreshold?.toInt()
+                        ?: (exam.maxScore * ExamAnalyticsCalculator.PASS_MARK_FRACTION).toInt()
+                    DetailLine("Total marks", exam.maxScore.toInt().toString())
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    DetailLine("Pass marks", passLine.toString())
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                AssessmentMode.GRADE_BASED -> {
+                    DetailLine("Grade scheme", exam.gradeSchemeName ?: "—")
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    DetailLine("Passing grade", exam.passingGradeLabel ?: "—")
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                AssessmentMode.CUSTOM -> {
+                    DetailLine("Custom scheme", exam.customSchemeName ?: "—")
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    DetailLine("Criteria summary", exam.customCriteriaSummary ?: "—")
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
             DetailLine("Evaluation", exam.evaluationType.name)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             DetailLine("Batch", exam.batchLabel)
@@ -367,7 +425,7 @@ private fun ResultSectionCard(results: List<ExamResult>, onOpenReport: () -> Uni
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        text = "Add marks to generate a report",
+                        text = "Enter results to generate a report",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -411,6 +469,9 @@ private fun DetailLine(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.End,
         )
     }
 }

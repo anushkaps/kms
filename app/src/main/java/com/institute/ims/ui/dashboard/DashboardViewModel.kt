@@ -12,6 +12,7 @@ import com.institute.ims.data.repository.ExamRepository
 import com.institute.ims.data.repository.FakeDashboardRepository
 import com.institute.ims.data.repository.FakeExamRepository
 import com.institute.ims.data.repository.FakeNewsRepository
+import com.institute.ims.data.repository.FakeNotificationRepository
 import com.institute.ims.data.repository.FakeRegionalPreferencesRepository
 import com.institute.ims.data.repository.FakeStudentRepository
 import com.institute.ims.data.repository.FakeUserRepository
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 
 /** Loads the signed-in user slice: profile header, stats, modules, news, and hub navigation search. */
 class DashboardViewModel(
@@ -46,7 +48,8 @@ class DashboardViewModel(
                     displayName = user.displayName,
                     role = user.role,
                     userInitials = initialsFor(user.displayName),
-                    greetingLine = greetingFor(user.displayName, user.role),
+                    timeOfDayGreeting = timeOfDayGreeting(),
+                    roleContextLine = roleContextLine(user.displayName, user.role),
                     quickChips = dashboardRepository.getQuickChipLabels(),
                     stats = dashboardRepository.getSummaryStats(user.role),
                     modules = dashboardRepository.getModuleCards(),
@@ -56,6 +59,7 @@ class DashboardViewModel(
                     regionalSummaryLine = RegionalCatalog.summaryLine(
                         FakeRegionalPreferencesRepository.prefsFlow.value,
                     ),
+                    hasUnreadNotifications = FakeNotificationRepository.hasUnread(),
                 )
             }
         }
@@ -65,6 +69,26 @@ class DashboardViewModel(
                     it.copy(regionalSummaryLine = RegionalCatalog.summaryLine(p))
                 }
             }
+        }
+        viewModelScope.launch {
+            FakeNotificationRepository.readIds.collectLatest {
+                _uiState.update { s ->
+                    s.copy(hasUnreadNotifications = FakeNotificationRepository.hasUnread())
+                }
+            }
+        }
+    }
+
+    /** Refreshes overview line, stats, and module subtitles from repositories (e.g. after "Today" tap). */
+    fun refreshHubSummary() {
+        val user = userRepository.getUser(userId) ?: return
+        _uiState.update {
+            it.copy(
+                stats = dashboardRepository.getSummaryStats(user.role),
+                modules = dashboardRepository.getModuleCards(),
+                overviewLine = dashboardRepository.getOverviewLine(user.role),
+                timeOfDayGreeting = timeOfDayGreeting(),
+            )
         }
     }
 
@@ -83,6 +107,16 @@ class DashboardViewModel(
 
     fun clearNewsSpotlight() {
         _uiState.update { it.copy(newsSpotlightId = null) }
+    }
+
+    fun navigationSuggestionsGrouped(): List<Pair<String, List<DashboardNavSuggestion>>> {
+        val flat = navigationSuggestions()
+        if (flat.isEmpty()) return emptyList()
+        val order = listOf("Modules & quick links", "Students", "Exams", "News", "Other")
+        val grouped = flat.groupBy { groupLabelFor(it) }
+        return order.mapNotNull { key ->
+            grouped[key]?.takeIf { it.isNotEmpty() }?.let { key to it }
+        }
     }
 
     /** Local-only matches for modules, students, exams, and news (hub navigation). */
@@ -155,7 +189,12 @@ class DashboardViewModel(
             }
 
         examRepository.getExams()
-            .filter { it.title.contains(q, ignoreCase = true) }
+            .filter {
+                it.title.contains(q, ignoreCase = true) ||
+                    it.subjectName.contains(q, ignoreCase = true) ||
+                    it.batchLabel.contains(q, ignoreCase = true) ||
+                    it.id.contains(q, ignoreCase = true)
+            }
             .take(4)
             .forEach { ex ->
                 add(
@@ -182,7 +221,7 @@ class DashboardViewModel(
                         id = "news-${item.id}",
                         title = "Latest news: ${item.title}",
                         subtitle = item.tag ?: "Institute update",
-                        action = DashboardNavAction.OpenNews(item.title),
+                        action = DashboardNavAction.OpenNewsDetail(item.id),
                     ),
                 )
             }
@@ -211,12 +250,22 @@ class DashboardViewModel(
         }
     }
 
+    private fun groupLabelFor(s: DashboardNavSuggestion): String = when {
+        s.id.startsWith("nav-") -> "Modules & quick links"
+        s.id.startsWith("stu-") -> "Students"
+        s.id.startsWith("exm-") -> "Exams"
+        s.id.startsWith("news-") -> "News"
+        else -> "Other"
+    }
+
     private fun studentNavHint(q: String): Boolean {
+        if (q == "students" || q == "student") return true
         val hints = listOf("student", "directory", "batch", "profile", "enroll", "former", "current")
         return hints.any { q.contains(it) }
     }
 
     private fun examNavHint(q: String): Boolean {
+        if (q == "exams" || q == "exam") return true
         val hints = listOf("exam", "paper", "test", "quiz", "viva", "mid-term", "final", "grade", "mark")
         return hints.any { q.contains(it) }
     }
@@ -251,13 +300,22 @@ class DashboardViewModel(
         }
     }
 
-    private fun greetingFor(displayName: String, role: UserRole): String {
+    private fun timeOfDayGreeting(): String {
+        val hour = LocalTime.now().hour
+        return when {
+            hour < 12 -> "Good morning."
+            hour < 17 -> "Good afternoon."
+            else -> "Good evening."
+        }
+    }
+
+    private fun roleContextLine(displayName: String, role: UserRole): String {
         val first = displayName.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
         val tone = when (role) {
             UserRole.ADMIN -> "Here is your institute overview"
             UserRole.FACULTY -> "Here is your teaching workspace"
         }
-        return "Hello, $first - $tone."
+        return "Hello, $first — $tone."
     }
 
     class Factory(

@@ -62,6 +62,8 @@ object FakeExamRepository : ExamRepository {
             scheduleLabel = "02 May 2026 · 14:00",
             status = ExamStatus.COMPLETED,
             assessmentMode = AssessmentMode.GRADE_BASED,
+            gradeSchemeName = "Letter bands (O–F)",
+            passingGradeLabel = "C",
         ),
         Exam(
             id = "exam-004",
@@ -76,6 +78,8 @@ object FakeExamRepository : ExamRepository {
             scheduleLabel = "22 Apr 2026 · Slots TBA",
             status = ExamStatus.PUBLISHED,
             assessmentMode = AssessmentMode.CUSTOM,
+            customSchemeName = "Viva rubric",
+            customCriteriaSummary = "Oral defense checklist; qualitative merit bands.",
         ),
     )
 

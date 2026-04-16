@@ -10,8 +10,12 @@ data class DashboardUiState(
     val displayName: String = "",
     val role: UserRole? = null,
     val userInitials: String = "",
-    val greetingLine: String = "",
+    /** Large headline under the profile row (time-of-day). */
+    val timeOfDayGreeting: String = "Good morning.",
+    /** Smaller role-aware line under the headline. */
+    val roleContextLine: String = "",
     val instituteSubtitle: String = "Institute Management System",
+    val hasUnreadNotifications: Boolean = true,
     val searchQuery: String = "",
     /** When set, Latest news shows only this item until cleared (from hub search). */
     val newsSpotlightId: String? = null,
