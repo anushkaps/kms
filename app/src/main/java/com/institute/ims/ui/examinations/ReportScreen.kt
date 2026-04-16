@@ -2,21 +2,19 @@ package com.institute.ims.ui.examinations
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -28,27 +26,23 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamAnalytics
-import com.institute.ims.data.model.ExamStatus
-import com.institute.ims.data.model.uiLabel
-import com.institute.ims.data.model.ScoreBucket
+import com.institute.ims.data.model.ExamResult
 import com.institute.ims.ui.common.LedgerPalette
 import com.institute.ims.utils.ExamAnalyticsCalculator
 
@@ -69,34 +63,11 @@ fun ReportScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Report center",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFFFFE7CC),
-                        )
-                        Text(
-                            text = state.exam?.title ?: "Report",
-                            style = MaterialTheme.typography.titleLarge,
-                            maxLines = 1,
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LedgerPalette.Amber,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                ),
+            ReportHeader(
+                exam = state.exam,
+                selectedTab = state.selectedTab,
+                onBack = onBack,
+                onTabChange = viewModel::onReportTabChange,
             )
         },
     ) { innerPadding ->
@@ -107,22 +78,95 @@ fun ReportScreen(
             )
             state.exam != null -> ReportBody(
                 exam = state.exam!!,
-                groupName = state.groupName,
                 analytics = state.analytics,
-                selectedTab = state.selectedTab,
-                onTabChange = viewModel::onReportTabChange,
+                topResults = state.topResults,
                 modifier = Modifier.padding(innerPadding),
             )
-            else -> Spacer(modifier = Modifier.padding(innerPadding))
+            else -> Unit
         }
     }
 }
 
 @Composable
-private fun ReportNotFoundBody(
-    examId: String,
-    modifier: Modifier = Modifier,
+private fun ReportHeader(
+    exam: Exam?,
+    selectedTab: ReportCenterTab,
+    onBack: () -> Unit,
+    onTabChange: (ReportCenterTab) -> Unit,
 ) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LedgerPalette.Amber)
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Report Center",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = exam?.let { "${it.title} · ${it.batchLabel}" } ?: "Exam report",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.65f),
+                )
+            }
+        }
+        // Kept for compatibility: selectedTab exists, but these chips are rendered as evaluation labels.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val eval = exam?.evaluationType?.name
+            HeaderMethodChip(
+                text = "${eval ?: "GPA"} method",
+                selected = true,
+                onClick = { onTabChange(selectedTab) },
+            )
+            HeaderMethodChip(
+                text = "CCE",
+                selected = eval == "CCE",
+                onClick = { onTabChange(selectedTab) },
+            )
+            HeaderMethodChip(
+                text = "CWA",
+                selected = eval == "CWA",
+                onClick = { onTabChange(selectedTab) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderMethodChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(text) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = Color.White.copy(alpha = 0.22f),
+            selectedLabelColor = Color.White,
+            containerColor = Color.White.copy(alpha = 0.12f),
+            labelColor = Color.White.copy(alpha = 0.92f),
+        ),
+    )
+}
+
+@Composable
+private fun ReportNotFoundBody(examId: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -130,14 +174,9 @@ private fun ReportNotFoundBody(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Text("Exam not found", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         Text(
-            text = "Exam not found",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "No exam record for \"$examId\". Go back and choose an exam from the list.",
+            text = "No exam record for \"$examId\".",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -147,467 +186,62 @@ private fun ReportNotFoundBody(
 @Composable
 private fun ReportBody(
     exam: Exam,
-    groupName: String?,
     analytics: ExamAnalytics?,
-    selectedTab: ReportCenterTab,
-    onTabChange: (ReportCenterTab) -> Unit,
+    topResults: List<ExamResult>,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Text(
-                text = "On-demand reports: pick a view below. All sections use the same local results snapshot.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        item {
-            ReportMetadataCard(exam = exam, groupName = groupName)
-        }
-        item {
-            ReportCenterTabRow(
-                selected = selectedTab,
-                onSelect = onTabChange,
-            )
-        }
-        when (selectedTab) {
-            ReportCenterTab.QUICK_SUMMARY -> {
-                item {
-                    SectionTitle("Quick summary")
-                    ReportSummaryCard(
-                        exam = exam,
-                        resultCount = analytics?.totalStudents ?: 0,
-                    )
-                }
-                item {
-                    if (analytics == null) {
-                        ReportEmptyQuickStats()
-                    } else {
-                        ReportQuickStatsGrid(analytics = analytics)
-                    }
-                }
-            }
-            ReportCenterTab.PERFORMANCE_OVERVIEW -> {
-                item {
-                    SectionTitle("Performance overview")
-                    Text(
-                        text = "Grade mix and cohort outcomes for this exam.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-                }
-                item {
-                    if (analytics == null) {
-                        ReportEmptyQuickStats()
-                    } else {
-                        ReportPerformanceOverview(exam = exam, analytics = analytics)
-                    }
-                }
-            }
-            ReportCenterTab.RESULT_DISTRIBUTION -> {
-                item {
-                    SectionTitle("Result distribution")
-                    Text(
-                        text = "Score buckets as % of max marks (automated from recorded results).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-                }
-                item {
-                    if (analytics == null) {
-                        ReportDistributionEmpty()
-                    } else {
-                        ReportDistributionSection(exam = exam, analytics = analytics)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Medium,
-        color = LedgerPalette.Amber,
-        modifier = Modifier.padding(bottom = 6.dp),
-    )
-}
-
-@Composable
-private fun ReportMetadataCard(
-    exam: Exam,
-    groupName: String?,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(
-                text = exam.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(percent = 50),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                ) {
-                    Text(
-                        text = exam.evaluationType.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(percent = 50),
-                    color = LedgerPalette.Amber.copy(alpha = 0.14f),
-                ) {
-                    Text(
-                        text = reportStatusLabel(exam.status),
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        color = LedgerPalette.Amber,
-                    )
-                }
-            }
-            ReportDetailLine("Exam category", exam.examType)
-            ReportDetailLine("Assessment mode", exam.assessmentMode.uiLabel())
-            ReportDetailLine("Subject", exam.subjectName)
-            ReportDetailLine("Batch", exam.batchLabel)
-            ReportDetailLine("Group", groupName ?: exam.groupId)
-            ReportDetailLine("Schedule", exam.scheduleLabel)
-            ReportDetailLine("Evaluation type", exam.evaluationType.name)
-        }
-    }
-}
-
-@Composable
-private fun ReportDetailLine(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-        )
-    }
-}
-
-@Composable
-private fun ReportSummaryCard(
-    exam: Exam,
-    resultCount: Int,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ReportDetailLine("Results on file", resultCount.toString())
-            ReportDetailLine(
-                when (exam.assessmentMode) {
-                    AssessmentMode.MARKS -> "Max marks"
-                    AssessmentMode.GRADE_BASED -> "Grade scale (max pts)"
-                    AssessmentMode.CUSTOM -> "Rubric cap (max pts)"
-                },
-                when {
-                    !exam.maxScore.isFinite() -> "Not set"
-                    exam.maxScore > 0 -> exam.maxScore.toString()
-                    else -> "Not set"
-                },
-            )
-            Text(
-                text = "Pass criterion: marks ≥ ${(ExamAnalyticsCalculator.PASS_MARK_FRACTION * 100).toInt()}% of max marks (requires max marks > 0).",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ReportCenterTabRow(
-    selected: ReportCenterTab,
-    onSelect: (ReportCenterTab) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = selected == ReportCenterTab.QUICK_SUMMARY,
-            onClick = { onSelect(ReportCenterTab.QUICK_SUMMARY) },
-            label = { Text("Quick summary") },
-            colors = reportTabColors(),
-        )
-        FilterChip(
-            selected = selected == ReportCenterTab.PERFORMANCE_OVERVIEW,
-            onClick = { onSelect(ReportCenterTab.PERFORMANCE_OVERVIEW) },
-            label = { Text("Performance overview") },
-            colors = reportTabColors(),
-        )
-        FilterChip(
-            selected = selected == ReportCenterTab.RESULT_DISTRIBUTION,
-            onClick = { onSelect(ReportCenterTab.RESULT_DISTRIBUTION) },
-            label = { Text("Result distribution") },
-            colors = reportTabColors(),
-        )
-    }
-}
-
-@Composable
-private fun reportTabColors() = FilterChipDefaults.filterChipColors(
-    selectedContainerColor = LedgerPalette.Amber,
-    selectedLabelColor = Color.White,
-    containerColor = MaterialTheme.colorScheme.surface,
-)
-
-@Composable
-private fun ReportEmptyQuickStats() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-        ),
-    ) {
-        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "No results on file",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Record marks for this exam to populate quick stats, performance breakdown, and distribution charts.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ReportQuickStatsGrid(analytics: ExamAnalytics) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            StatMiniCard(
-                label = "Average",
-                value = ExamAnalyticsCalculator.formatOneDecimal(analytics.averageMarks),
-                modifier = Modifier.weight(1f),
-            )
-            StatMiniCard(
-                label = "Highest",
-                value = ExamAnalyticsCalculator.formatOneDecimal(analytics.highestMarks),
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            StatMiniCard(
-                label = "Lowest",
-                value = ExamAnalyticsCalculator.formatOneDecimal(analytics.lowestMarks),
-                modifier = Modifier.weight(1f),
-            )
-            StatMiniCard(
-                label = "Pass rate",
-                value = analytics.passPercentage?.let { ExamAnalyticsCalculator.formatPercent(it) } ?: "-",
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Text(
-            text = "Students with results: ${analytics.totalStudents}",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-        )
-    }
-}
-
-@Composable
-private fun ReportPerformanceOverview(
-    exam: Exam,
-    analytics: ExamAnalytics,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ReportQuickStatsGrid(analytics = analytics)
-        if (analytics.passedCount != null && analytics.failedCount != null) {
-            Text(
-                text = "Passed: ${analytics.passedCount} · Not passed: ${analytics.failedCount}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else if (!exam.maxScore.isFinite() || exam.maxScore <= 0) {
-            Text(
-                text = "Pass counts apply only when max marks is a positive number.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (analytics.gradeBreakdown.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Recorded grade labels",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    analytics.gradeBreakdown.forEach { (label, count) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(text = label, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = count.toString(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
-                }
-            }
-        } else {
-            Text(
-                text = "No letter-grade rows yet; labels appear once marks are stored.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ReportDistributionEmpty() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = "Mark distribution (% of max)",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Preview: bars fill once scores exist.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            val preview = ExamAnalyticsCalculator.emptyDistributionPreview()
-            preview.forEach { bucket ->
-                BucketBarRow(bucket = bucket, maxCount = 1)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReportDistributionSection(
-    exam: Exam,
-    analytics: ExamAnalytics,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (analytics.buckets.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = "Mark distribution (% of max)",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "Each student is placed in a bucket by score ÷ max marks.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    val maxBucket = analytics.buckets.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
-                    analytics.buckets.forEach { bucket ->
-                        BucketBarRow(bucket = bucket, maxCount = maxBucket)
-                    }
-                }
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
-                    ),
-                ) {
-                    Text(
-                        text = "Percent-based distribution needs max marks > 0.",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(14.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        if (analytics == null) {
+            item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            text = "Mark distribution (% of max)",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = "Unavailable until max marks is set. Bucket layout preview:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        val preview = ExamAnalyticsCalculator.emptyDistributionPreview()
-                        preview.forEach { bucket ->
-                            BucketBarRow(bucket = bucket, maxCount = 1)
-                        }
-                    }
+                    Text(
+                        text = "No results entered yet for this exam.",
+                        modifier = Modifier.padding(14.dp),
+                    )
                 }
             }
+        } else {
+            item { TightStatsGrid(analytics = analytics) }
+            item { GradeDistributionCard(analytics = analytics) }
+            item { TopResultsCard(results = topResults) }
+            item { ExportButton() }
+        }
+    }
+}
+
+@Composable
+private fun TightStatsGrid(analytics: ExamAnalytics) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            StatMiniCard("Appeared", analytics.totalStudents.toString(), Modifier.weight(1f))
+            StatMiniCard(
+                "Pass rate",
+                analytics.passPercentage?.let { ExamAnalyticsCalculator.formatPercent(it) } ?: "-",
+                Modifier.weight(1f),
+                accent = LedgerPalette.Forest,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            StatMiniCard(
+                "Average",
+                ExamAnalyticsCalculator.formatOneDecimal(analytics.averageMarks),
+                Modifier.weight(1f),
+                suffix = "Average score",
+            )
+            StatMiniCard(
+                "Highest",
+                ExamAnalyticsCalculator.formatOneDecimal(analytics.highestMarks),
+                Modifier.weight(1f),
+                suffix = "Lowest: ${ExamAnalyticsCalculator.formatOneDecimal(analytics.lowestMarks)}",
+            )
         }
     }
 }
@@ -617,72 +251,195 @@ private fun StatMiniCard(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    accent: Color = MaterialTheme.colorScheme.onSurface,
+    suffix: String? = null,
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = value, style = MaterialTheme.typography.headlineSmall, color = accent)
+            Text(text = label.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            suffix?.let {
+                Text(text = it, style = MaterialTheme.typography.bodySmall, color = accent)
+            }
         }
     }
 }
 
 @Composable
-private fun BucketBarRow(
-    bucket: ScoreBucket,
-    maxCount: Int,
-) {
-    Row(
+private fun GradeDistributionCard(analytics: ExamAnalytics) {
+    val gradeLabels = listOf("O", "A+", "A", "B+", "F")
+    val countsByLabel = analytics.gradeBreakdown.toMap()
+    val bars = gradeLabels.map { label -> label to (countsByLabel[label] ?: 0) }
+    val maxCount = bars.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Text(
-            text = bucket.label,
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.width(72.dp),
-        )
-        Text(
-            text = bucket.count.toString(),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.width(28.dp),
-        )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(22.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-        ) {
-            val frac = if (maxCount > 0) bucket.count.toFloat() / maxCount else 0f
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = "GRADE DISTRIBUTION - GPA",
+                style = MaterialTheme.typography.labelLarge,
+                color = LedgerPalette.Amber,
+            )
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(frac)
-                    .background(
-                        LedgerPalette.Plum.copy(
-                            alpha = (0.35f + (0.55f * frac)).coerceIn(0.35f, 0.9f),
-                        ),
-                    ),
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant),
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                bars.forEachIndexed { index, (label, count) ->
+                    val ratio = count.toFloat() / maxCount.toFloat()
+                    val alpha = (0.95f - (index * 0.17f)).coerceIn(0.2f, 0.95f)
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = count.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                        Box(
+                            modifier = Modifier
+                                .height(76.dp)
+                                .fillMaxWidth()
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                    shape = RoundedCornerShape(3.dp),
+                                ),
+                            contentAlignment = Alignment.BottomCenter,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight(ratio)
+                                    .fillMaxWidth()
+                                    .background(
+                                        color = LedgerPalette.Plum.copy(alpha = alpha),
+                                        shape = RoundedCornerShape(3.dp),
+                                    ),
+                            )
+                        }
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
-private fun reportStatusLabel(status: ExamStatus): String = when (status) {
-    ExamStatus.DRAFT -> "Draft"
-    ExamStatus.PUBLISHED -> "Published"
-    ExamStatus.COMPLETED -> "Completed"
+@Composable
+private fun TopResultsCard(results: List<ExamResult>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = "TOP RESULTS",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            results.forEachIndexed { idx, row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = (idx + 1).toString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.width(18.dp),
+                        )
+                        Column(modifier = Modifier.weight(1f, fill = false)) {
+                            Text(
+                                text = row.studentName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = row.studentNumber,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = row.score.toInt().toString(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        GradePill(grade = row.gradeLabel)
+                    }
+                }
+                if (idx != results.lastIndex) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GradePill(grade: String?) {
+    val label = grade ?: "—"
+    val isGood = label == "A" || label == "A+" || label == "O" || label == "Advanced" || label == "Proficient"
+    val (bg, fg) = if (isGood) {
+        LedgerPalette.Forest.copy(alpha = 0.12f) to LedgerPalette.Forest
+    } else {
+        LedgerPalette.Plum.copy(alpha = 0.12f) to LedgerPalette.Plum
+    }
+    Box(
+        modifier = Modifier
+            .background(bg, RoundedCornerShape(4.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = fg,
+        )
+    }
+}
+
+@Composable
+private fun ExportButton() {
+    OutlinedButton(
+        onClick = { /* submission prototype: no export */ },
+        modifier = Modifier.fillMaxWidth(),
+        border = BorderStroke(1.dp, LedgerPalette.Amber),
+        shape = RoundedCornerShape(8.dp),
+    ) {
+        Text(
+            text = "Export Report  →",
+            color = LedgerPalette.Amber,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+        )
+    }
 }

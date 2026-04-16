@@ -2,8 +2,8 @@ package com.institute.ims.ui.common
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,30 +13,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.institute.ims.data.model.User
 import com.institute.ims.data.model.UserRole
 
@@ -48,149 +44,242 @@ fun RoleSelectScreen(
 ) {
     var selectedUserId by remember(users) { mutableStateOf(users.firstOrNull()?.id) }
     val selectedUser = users.firstOrNull { it.id == selectedUserId }
+    val adminUser = users.firstOrNull { it.role == UserRole.ADMIN }
+    val facultyUser = users.firstOrNull { it.role == UserRole.FACULTY }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(LedgerPalette.Parchment),
+            .background(Color(0xFFF5F3EE)),
     ) {
-        Surface(
-            color = LedgerPalette.Ink,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = "LEDGER IMS  -  DEMO MODE",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFFA09A8D),
-                )
-                Text(
-                    text = "Sign in as",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color(0xFFF3EEE2),
-                )
-                Text(
-                    text = "Select your role to continue",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFC9C2B5),
-                )
-            }
-        }
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-        users.forEach { user ->
-            val selected = user.id == selectedUserId
-            val borderColor = if (selected) LedgerPalette.Cobalt else LedgerPalette.Rule
-            Card(
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(Color(0xFF1A1814)),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .background(Color(0xFF1A1814)),
+        )
+        Text(
+            text = "LEDGER IMS - Demo Mode",
+            color = Color(0xFF6E6A62),
+            fontWeight = FontWeight.W500,
+            fontSize = 10.sp,
+            lineHeight = 12.sp,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 24.dp, top = 56.dp),
+        )
+        Text(
+            text = "Sign in as",
+            color = Color(0xFFF5F3EE),
+            fontWeight = FontWeight.W600,
+            fontSize = 28.sp,
+            lineHeight = 34.sp,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 24.dp, top = 80.dp),
+        )
+        Text(
+            text = "Select your role to continue",
+            color = Color(0xFF6E6A62),
+            fontWeight = FontWeight.W400,
+            fontSize = 14.sp,
+            lineHeight = 17.sp,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 24.dp, top = 122.dp),
+        )
+
+        adminUser?.let { user ->
+            RoleCard(
+                user = user,
+                selected = user.id == selectedUserId,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { selectedUserId = user.id },
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = LedgerPalette.Surface),
-                border = BorderStroke(width = if (selected) 1.5.dp else 1.dp, color = borderColor),
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(
-                                color = when (user.role) {
-                                    UserRole.ADMIN -> LedgerPalette.Cobalt.copy(alpha = 0.12f)
-                                    UserRole.FACULTY -> LedgerPalette.Forest.copy(alpha = 0.12f)
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = if (user.role == UserRole.ADMIN) {
-                                Icons.Outlined.AdminPanelSettings
-                            } else {
-                                Icons.Outlined.PersonOutline
-                            },
-                            contentDescription = null,
-                            tint = if (user.role == UserRole.ADMIN) LedgerPalette.Cobalt else LedgerPalette.Forest,
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = user.displayName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = if (user.role == UserRole.ADMIN) {
-                                "Full access - all modules"
-                            } else {
-                                "Exam - student view"
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(18.dp)
-                            .background(Color.Transparent, CircleShape)
-                            .padding(2.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(if (selected) 10.dp else 8.dp)
-                                .background(
-                                    if (selected) LedgerPalette.Cobalt else Color(0xFFC8C2B7),
-                                    CircleShape,
-                                ),
-                        )
-                    }
-                }
-            }
+                    .align(Alignment.TopCenter)
+                    .padding(top = 244.dp),
+                onClick = { selectedUserId = user.id },
+            )
         }
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF1E0)),
-                border = BorderStroke(1.dp, Color(0xFFF0D4AF)),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text(
-                    text = "Demo mode active - local data only. No credentials required.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = LedgerPalette.Amber,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Button(
-                onClick = { selectedUser?.let(onUserSelected) },
+        facultyUser?.let { user ->
+            RoleCard(
+                user = user,
+                selected = user.id == selectedUserId,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 352.dp),
+                onClick = { selectedUserId = user.id },
+            )
+        }
+
+        Card(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 684.dp)
+                .width(342.dp)
+                .height(48.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF0E5)),
+            border = BorderStroke(1.dp, Color(0xFFF5D9B5)),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text(
+                text = "Demo mode - no credentials required . Local data only.",
+                color = Color(0xFFB85C00),
+                fontWeight = FontWeight.W400,
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 10.dp),
+            )
+        }
+
+        Button(
+            onClick = { selectedUser?.let(onUserSelected) },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 748.dp)
+                .width(342.dp)
+                .height(52.dp),
+            enabled = selectedUser != null,
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1B4FBF),
+                contentColor = Color.White,
+            ),
+        ) {
+            Text(
+                text = selectedUser?.let(::roleEntryLabel) ?: "Select a role",
+                fontWeight = FontWeight.W600,
+                fontSize = 15.sp,
+                lineHeight = 18.sp,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = selectedUser != null,
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = LedgerPalette.Cobalt,
-                    contentColor = Color.White,
-                ),
-            ) {
-                Text(
-                    text = selectedUser?.let(::roleEntryLabel) ?: "Select a role",
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
-            }
+            )
         }
     }
 }
 
+@Composable
+private fun RoleCard(
+    user: User,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val accent = if (user.role == UserRole.ADMIN) Color(0xFF1B4FBF) else Color(0xFF0F7A5A)
+    val iconBg = if (user.role == UserRole.ADMIN) Color(0xFFEEF2FB) else Color(0xFFEAF4EF)
+    Card(
+        modifier = modifier
+            .width(342.dp)
+            .height(88.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(
+            if (selected) 2.dp else 1.dp,
+            if (selected) Color(0xFF1B4FBF) else Color(0xFFD4CFC5),
+        ),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(iconBg, RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (user.role == UserRole.ADMIN) {
+                    AdminGlyph()
+                } else {
+                    FacultyGlyph()
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = user.displayName,
+                    color = Color(0xFF1A1814),
+                    fontWeight = FontWeight.W600,
+                    fontSize = 16.sp,
+                    lineHeight = 19.sp,
+                )
+                Text(
+                    text = if (user.role == UserRole.ADMIN) "Full access - all modules" else "Exam - student view",
+                    color = Color(0xFF6E6A62),
+                    fontWeight = FontWeight.W400,
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .then(
+                        if (selected) {
+                            Modifier.background(accent, CircleShape)
+                        } else {
+                            Modifier
+                                .background(Color.White, CircleShape)
+                                .border(1.5.dp, Color(0xFFD4CFC5), CircleShape)
+                        },
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminGlyph() {
+    Box(modifier = Modifier.size(28.dp)) {
+        Box(
+            modifier = Modifier
+                .padding(start = 2.dp, top = 4.dp)
+                .size(10.dp)
+                .background(Color(0xFF1B4FBF), RoundedCornerShape(2.dp)),
+        )
+        Box(
+            modifier = Modifier
+                .padding(start = 16.dp, top = 4.dp)
+                .size(10.dp)
+                .background(Color(0xFF1B4FBF), RoundedCornerShape(2.dp)),
+        )
+        Box(
+            modifier = Modifier
+                .padding(start = 2.dp, top = 17.dp)
+                .width(24.dp)
+                .height(7.dp)
+                .background(Color(0xFF1B4FBF), RoundedCornerShape(2.dp)),
+        )
+    }
+}
+
+@Composable
+private fun FacultyGlyph() {
+    Box(modifier = Modifier.size(28.dp)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .size(16.dp)
+                .background(Color(0xFF0F7A5A), CircleShape),
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .width(28.dp)
+                .height(14.dp)
+                .background(Color(0xFF0F7A5A), RoundedCornerShape(4.dp)),
+        )
+    }
+}
+
 private fun roleEntryLabel(user: User): String = when (user.role) {
-    UserRole.ADMIN -> "Enter as Institute Admin"
-    UserRole.FACULTY -> "Enter as Faculty Member"
+    UserRole.ADMIN -> "Enter as Institute Admin ->"
+    UserRole.FACULTY -> "Enter as Faculty Member ->"
 }

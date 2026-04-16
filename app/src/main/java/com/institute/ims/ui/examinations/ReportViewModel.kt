@@ -27,11 +27,13 @@ class ReportViewModel(
             val group = repository.getGroups().find { it.id == exam.groupId }
             val results = repository.getResultsForExam(examId)
             val analytics = ExamAnalyticsCalculator.compute(exam, results)
+            val topResults = results.sortedByDescending { it.score }.take(3)
             _uiState.update {
                 it.copy(
                     exam = exam,
                     groupName = group?.name,
                     analytics = analytics,
+                    topResults = topResults,
                     notFound = false,
                 )
             }

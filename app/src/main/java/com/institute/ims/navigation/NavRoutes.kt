@@ -10,6 +10,7 @@ object NavRoutes {
     const val CreateExam = "create_exam"
     const val ExamDetail = "exam_detail/{examId}"
     const val Report = "report/{examId}"
+    const val News = "news/{query}"
     const val RegionalSettings = "regional_settings"
     const val CapabilityInfo = "capability_info/{stubId}"
 
@@ -22,6 +23,8 @@ object NavRoutes {
     fun examDetail(examId: String): String = "exam_detail/${encode(examId)}"
 
     fun report(examId: String): String = "report/${encode(examId)}"
+
+    fun news(query: String = ""): String = "news/${encode(query)}"
 
     private fun encode(segment: String): String = android.net.Uri.encode(segment)
 }

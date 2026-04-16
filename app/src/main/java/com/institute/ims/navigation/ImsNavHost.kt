@@ -16,6 +16,7 @@ import com.institute.ims.ui.common.CapabilityInfoScreen
 import com.institute.ims.ui.common.RoleSelectScreen
 import com.institute.ims.ui.common.SplashScreen
 import com.institute.ims.ui.dashboard.DashboardScreen
+import com.institute.ims.ui.dashboard.NewsScreen
 import com.institute.ims.ui.examinations.CreateExamScreen
 import com.institute.ims.ui.examinations.ExamDetailScreen
 import com.institute.ims.ui.examinations.ExamListScreen
@@ -77,8 +78,17 @@ fun ImsNavHost(
             } else {
                 DashboardScreen(
                     userId = user.id,
+                    onSignOut = {
+                        navController.navigate(NavRoutes.RoleSelect) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     onOpenStudents = { navController.navigate(NavRoutes.StudentList) },
                     onOpenExams = { navController.navigate(NavRoutes.ExamList) },
+                    onOpenNews = { query ->
+                        navController.navigate(NavRoutes.news(query))
+                    },
                     onOpenStudentProfile = { studentId ->
                         navController.navigate(NavRoutes.studentProfile(studentId))
                     },
@@ -145,6 +155,20 @@ fun ImsNavHost(
                 onOpenExam = { examId ->
                     navController.navigate(NavRoutes.examDetail(examId))
                 },
+            )
+        }
+
+        composable(
+            route = NavRoutes.News,
+            arguments = listOf(
+                navArgument("query") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val rawQuery = entry.arguments?.getString("query").orEmpty()
+            val query = android.net.Uri.decode(rawQuery)
+            NewsScreen(
+                initialQuery = query,
+                onBack = { navController.popBackStack() },
             )
         }
 

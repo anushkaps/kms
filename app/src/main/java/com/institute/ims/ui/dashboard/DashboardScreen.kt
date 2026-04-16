@@ -16,18 +16,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.EditNote
-import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.HourglassTop
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Schedule
@@ -40,6 +43,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -68,7 +72,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.institute.ims.data.model.DashboardCapabilityAction
 import com.institute.ims.data.model.DashboardCapabilityHighlight
 import com.institute.ims.data.model.DashboardStat
 import com.institute.ims.data.model.NewsItem
@@ -83,8 +86,10 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     userId: String,
+    onSignOut: () -> Unit,
     onOpenStudents: () -> Unit,
     onOpenExams: () -> Unit,
+    onOpenNews: (query: String) -> Unit,
     onOpenStudentProfile: (studentId: String) -> Unit,
     onOpenExamDetail: (examId: String) -> Unit,
     onOpenRegionalSettings: () -> Unit,
@@ -100,22 +105,15 @@ fun DashboardScreen(
     val recentSuggestions = remember { mutableStateListOf<DashboardNavSuggestion>() }
     var searchPaletteVisible by rememberSaveable { mutableStateOf(false) }
 
-    val queryTrimmed = uiState.searchQuery.trim()
     val navSuggestions = remember(uiState.searchQuery, uiState.news) {
         viewModel.navigationSuggestions()
     }
 
-    val displayedNews = remember(uiState.news, uiState.newsSpotlightId, queryTrimmed) {
+    val displayedNews = remember(uiState.news, uiState.newsSpotlightId) {
         when {
             uiState.newsSpotlightId != null ->
                 uiState.news.filter { it.id == uiState.newsSpotlightId }
-            queryTrimmed.isEmpty() -> uiState.news
-            else ->
-                uiState.news.filter { item ->
-                    item.title.contains(queryTrimmed, ignoreCase = true) ||
-                        item.body.contains(queryTrimmed, ignoreCase = true) ||
-                        (item.tag?.contains(queryTrimmed, ignoreCase = true) == true)
-                }
+            else -> uiState.news
         }
     }
     BackHandler(enabled = searchPaletteVisible) {
@@ -141,8 +139,9 @@ fun DashboardScreen(
                 viewModel.onSearchQueryChange("")
                 onOpenExamDetail(a.examId)
             }
-            is DashboardNavAction.FocusNews -> {
-                viewModel.spotlightNews(a.newsId)
+            is DashboardNavAction.OpenNews -> {
+                viewModel.onSearchQueryChange("")
+                onOpenNews(a.query)
             }
             DashboardNavAction.OpenRegionalSettings -> {
                 viewModel.onSearchQueryChange("")
@@ -161,17 +160,6 @@ fun DashboardScreen(
         applySuggestion(suggestion)
     }
 
-    fun applyCapabilityAction(action: DashboardCapabilityAction) {
-        focusManager.clearFocus()
-        when (action) {
-            DashboardCapabilityAction.OPEN_STUDENTS -> onOpenStudents()
-            DashboardCapabilityAction.OPEN_EXAMS -> onOpenExams()
-            DashboardCapabilityAction.OPEN_REGIONAL -> onOpenRegionalSettings()
-            DashboardCapabilityAction.OPEN_ADMISSION_SMS_INFO ->
-                onOpenCapabilityInfo("admission_sms")
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -181,209 +169,60 @@ fun DashboardScreen(
                 .padding(innerPadding)
                 .fillMaxSize(),
             contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = 16.dp,
+                start = 24.dp,
+                end = 24.dp,
+                top = 0.dp,
                 bottom = 28.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                DashboardHeader(
-                    displayName = uiState.displayName,
-                    role = uiState.role,
-                    initials = uiState.userInitials,
-                    greetingLine = uiState.greetingLine,
-                    instituteSubtitle = uiState.instituteSubtitle,
-                )
-            }
-
-            item { Spacer(modifier = Modifier.height(12.dp)) }
-
-            item {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Surface(
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                ) {
+                    DashboardHeader(
+                        displayName = uiState.displayName,
+                        role = uiState.role,
+                        initials = uiState.userInitials,
+                        greetingLine = uiState.greetingLine,
+                        instituteSubtitle = uiState.instituteSubtitle,
+                        onSignOut = onSignOut,
+                    )
+                    DashboardSearchBar(
+                        query = uiState.searchQuery,
+                        onClick = { searchPaletteVisible = true },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { searchPaletteVisible = true },
-                        shape = MaterialTheme.shapes.extraLarge,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        color = MaterialTheme.colorScheme.surface,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Search,
-                                contentDescription = "Search",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = uiState.searchQuery.ifBlank { "Search students, exams..." },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = "Open",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                    Text(
-                        text = "Command palette for quick jump navigation.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp, start = 4.dp),
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth(),
                     )
                 }
             }
 
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    uiState.quickChips.forEach { label ->
-                        SuggestionChip(
-                            onClick = {
-                                focusManager.clearFocus()
-                                viewModel.onQuickChipClick(
-                                    label = label,
-                                    onOpenStudents = onOpenStudents,
-                                    onOpenExams = onOpenExams,
-                                )
-                            },
-                            label = { Text(label) },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ),
-                            border = null,
-                        )
-                    }
-                }
+                TodayRow(uiState.overviewLine)
             }
 
             item {
-                RegionalSettingsSummaryCard(
-                    summaryLine = uiState.regionalSummaryLine,
-                    onOpenSettings = {
-                        focusManager.clearFocus()
-                        onOpenRegionalSettings()
-                    },
-                )
-            }
-
-            item { SectionTitle("Modules") }
-
-            items(uiState.modules, key = { it.id }) { card ->
-                ElevatedCard(
-                    onClick = {
-                        focusManager.clearFocus()
-                        viewModel.onModuleClick(
-                            id = card.id,
-                            onOpenStudents = onOpenStudents,
-                            onOpenExams = onOpenExams,
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    shape = MaterialTheme.shapes.large,
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = moduleAccent(card.id.name),
-                    ),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = Color.White.copy(alpha = 0.16f),
-                            modifier = Modifier.size(48.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = moduleIcon(card.id.name),
-                                    contentDescription = null,
-                                    tint = moduleAccentContent(card.id.name),
-                                )
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = card.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = moduleAccentContent(card.id.name),
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = card.description,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = moduleAccentContent(card.id.name).copy(alpha = 0.9f),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-                            contentDescription = null,
-                            tint = moduleAccentContent(card.id.name).copy(alpha = 0.75f),
-                        )
-                    }
-                }
-            }
-
-            item {
-                SectionTitle("Institute capabilities (full IMS scope)")
                 Text(
-                    text = "Reference cards for everything the hub is meant to represent. Interactive flows are linked where this prototype implements them.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
+                    text = "OVERVIEW",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF6E6A62),
+                    fontWeight = FontWeight.SemiBold,
                 )
-            }
-
-            items(
-                uiState.capabilityHighlights,
-                key = { it.id },
-            ) { cap ->
-                CapabilityHighlightCard(
-                    highlight = cap,
-                    onAction = cap.action?.let { act ->
-                        { applyCapabilityAction(act) }
-                    },
-                )
-            }
-
-            item {
-                SectionTitle("Overview")
                 val topStats = uiState.stats.take(4)
                 val rowA = topStats.take(2)
                 val rowB = topStats.drop(2).take(2)
                 if (rowA.isNotEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        rowA.forEach { stat ->
+                        rowA.forEachIndexed { index, stat ->
                             DashboardStatMiniCard(
                                 stat = stat,
-                                icon = statIcon(stat.id),
+                                iconColor = statDotColor(index),
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -393,15 +232,15 @@ fun DashboardScreen(
                     }
                 }
                 if (rowB.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        rowB.forEach { stat ->
+                        rowB.forEachIndexed { index, stat ->
                             DashboardStatMiniCard(
                                 stat = stat,
-                                icon = statIcon(stat.id),
+                                iconColor = statDotColor(index + 2),
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -413,27 +252,51 @@ fun DashboardScreen(
             }
 
             item {
-                SectionTitle("Today")
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    ),
-                    shape = MaterialTheme.shapes.large,
+                Text(
+                    text = "MODULES",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF6E6A62),
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Today,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                    val studentsModule = uiState.modules.firstOrNull { it.id.name == "STUDENTS" }
+                    val examsModule = uiState.modules.firstOrNull { it.id.name == "EXAMS" }
+                    studentsModule?.let { card ->
+                        ModuleTileCard(
+                            title = card.title,
+                            subtitle = card.description,
+                            accent = LedgerPalette.Cobalt,
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel.onModuleClick(
+                                    id = card.id,
+                                    onOpenStudents = onOpenStudents,
+                                    onOpenExams = onOpenExams,
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
                         )
-                        Text(
-                            text = uiState.overviewLine,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    }
+                    examsModule?.let { card ->
+                        ModuleTileCard(
+                            title = card.title,
+                            subtitle = card.description,
+                            accent = LedgerPalette.Plum,
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel.onModuleClick(
+                                    id = card.id,
+                                    onOpenStudents = onOpenStudents,
+                                    onOpenExams = onOpenExams,
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -443,49 +306,27 @@ fun DashboardScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 20.dp, bottom = 10.dp),
+                        .padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = "LATEST NEWS",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF6E6A62),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "All ->",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = LedgerPalette.Cobalt,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (uiState.newsSpotlightId != null) {
-                        TextButton(onClick = { viewModel.clearNewsSpotlight() }) {
-                            Text("Show all news")
-                        }
-                    }
-                }
-            }
-
-            if (queryTrimmed.isNotEmpty() && uiState.newsSpotlightId == null) {
-                item {
-                    Text(
-                        text = "${displayedNews.size} news match(es) for \"$queryTrimmed\"",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                        modifier = Modifier.clickable { onOpenNews("") },
                     )
                 }
             }
 
-            items(displayedNews, key = { it.id }) { news ->
-                NewsRowCard(newsItem = news)
-            }
-
-            if (displayedNews.isEmpty() && uiState.news.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "No news matches your filters. Clear hub search or tap Show all news.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 12.dp),
-                    )
-                }
-            }
+            item { DashboardNewsCard(displayedNews.take(2)) }
         }
         AnimatedVisibility(visible = searchPaletteVisible) {
             Surface(
@@ -562,7 +403,7 @@ fun DashboardScreen(
                                 SuggestionChip(
                                     onClick = {
                                         searchPaletteVisible = false
-                                        viewModel.onSearchQueryChange("news")
+                                        onOpenNews("")
                                     },
                                     label = { Text("News") },
                                 )
@@ -760,68 +601,326 @@ private fun HubSearchSuggestionsCard(
 }
 
 @Composable
+private fun DashboardSearchBar(
+    query: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+        color = Color.White,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFD4CFC5)),
+            )
+            Text(
+                text = query.ifBlank { "Search students, exams, news..." },
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF888780),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = Color(0xFFF5F3EE),
+                border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+            ) {
+                Text(
+                    text = "SK",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF888780),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayRow(overviewLine: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(4.dp),
+            color = Color(0xFFEEF2FB),
+        ) {
+            Text(
+                text = "Today",
+                style = MaterialTheme.typography.labelSmall,
+                color = LedgerPalette.Cobalt,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            )
+        }
+        Text(
+            text = overviewLine,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF6E6A62),
+        )
+    }
+}
+
+@Composable
+private fun ModuleTileCard(
+    title: String,
+    subtitle: String,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier
+            .height(100.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = accent),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            if (accent == LedgerPalette.Cobalt) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.3f)),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f)),
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .width(24.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color.White.copy(alpha = 0.3f)),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .width(18.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color.White.copy(alpha = 0.2f)),
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.65f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "->",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.4f),
+                modifier = Modifier.align(Alignment.End),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DashboardNewsCard(newsItems: List<NewsItem>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            val first = newsItems.getOrNull(0)
+            if (first != null) {
+                NewsRowLine(first)
+            }
+            HorizontalDivider(color = Color(0xFFEEECE5))
+            val second = newsItems.getOrNull(1)
+            if (second != null) {
+                NewsRowLine(second)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NewsRowLine(item: NewsItem) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = formatNewsDate(item.publishedAtEpochMs).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF6E6A62),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = newsSummary(item.body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = LedgerPalette.Ink,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        item.tag?.let { tag ->
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = if (tag.equals("Admin", true)) Color(0xFFEEF2FB) else Color(0xFFF3EDF9),
+            ) {
+                Text(
+                    text = tag,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (tag.equals("Admin", true)) LedgerPalette.Cobalt else LedgerPalette.Plum,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun DashboardHeader(
     displayName: String,
     role: UserRole?,
     initials: String,
     greetingLine: String,
     instituteSubtitle: String,
+    onSignOut: () -> Unit,
 ) {
-    Surface(
-        color = LedgerPalette.Ink,
-        shape = MaterialTheme.shapes.extraLarge,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .background(LedgerPalette.Ink),
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .background(LedgerPalette.Ink),
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(start = 0.dp, end = 0.dp, top = 56.dp)
+                .padding(horizontal = 0.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = initials,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = instituteSubtitle,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFFA8A090),
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = displayName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFF3EEE1),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                role?.let { r ->
-                    Text(
-                        text = roleLabel(r),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = LedgerPalette.Cobalt,
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = greetingLine,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFD3CCBC),
-                )
-            }
+                    .padding(start = 0.dp),
+            )
         }
+        Box(
+            modifier = Modifier
+                .padding(start = 0.dp),
+        )
+        Box(
+            modifier = Modifier
+                .padding(start = 24.dp, top = 56.dp)
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(LedgerPalette.Cobalt),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = initials,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+        Text(
+            text = role?.let(::roleLabel) ?: instituteSubtitle,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF6E6A62),
+            modifier = Modifier.padding(start = 68.dp, top = 58.dp),
+        )
+        Text(
+            text = displayName,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFFF5F3EE),
+            modifier = Modifier.padding(start = 68.dp, top = 72.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 24.dp, top = 58.dp)
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF2C2B27))
+                .clickable(onClick = onSignOut),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Lock,
+                contentDescription = "Sign out",
+                tint = Color(0xFFD4CFC5),
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 20.dp, top = 56.dp)
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFC0352B)),
+        )
+        Text(
+            text = greetingLine.ifBlank { "Good morning." },
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color(0xFFF5F3EE),
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 24.dp, top = 106.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -839,46 +938,45 @@ private fun SectionTitle(text: String) {
 @Composable
 private fun DashboardStatMiniCard(
     stat: DashboardStat,
-    icon: ImageVector,
+    iconColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(
+    Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White,
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp),
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(iconColor),
             )
             Text(
                 text = stat.value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = LedgerPalette.Ink,
+                modifier = Modifier.padding(top = 10.dp),
             )
             Text(
                 text = stat.label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF6E6A62),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            stat.caption?.let { cap ->
-                Text(
-                    text = cap,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
     }
 }
@@ -948,8 +1046,15 @@ private fun formatNewsDate(epochMs: Long): String {
 }
 
 private fun roleLabel(role: UserRole): String = when (role) {
-    UserRole.ADMIN -> "Administrator"
-    UserRole.FACULTY -> "Faculty"
+    UserRole.ADMIN -> "Institute Admin"
+    UserRole.FACULTY -> "Faculty Member"
+}
+
+private fun statDotColor(index: Int): Color = when (index) {
+    0 -> LedgerPalette.Forest
+    1 -> LedgerPalette.Plum
+    2 -> LedgerPalette.Amber
+    else -> LedgerPalette.Cobalt
 }
 
 private fun statIcon(statId: String): ImageVector = when (statId) {

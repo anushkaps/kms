@@ -15,7 +15,8 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "APP_IDENTIFIER", "\"ims-dass-a3\"")
+        // DASS Task 3 requirement: rollNumber.teammateRollNumber (or rollNumber.0 if solo)
+        buildConfigField("String", "APP_IDENTIFIER", "\"2025121007.2025121014\"")
     }
 
     buildTypes {
@@ -62,8 +63,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
     implementation("androidx.navigation:navigation-compose:2.8.4")
-
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
