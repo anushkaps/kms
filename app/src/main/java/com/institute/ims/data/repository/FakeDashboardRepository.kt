@@ -12,16 +12,28 @@ object FakeDashboardRepository : DashboardRepository {
     override fun getSummaryStats(role: UserRole): List<DashboardStat> = when (role) {
         UserRole.ADMIN -> listOf(
             DashboardStat(
-                id = "pending_approval",
-                label = "Pending faculty approval",
-                value = "2",
-                caption = "Sign-offs waiting",
+                id = "students",
+                label = "Students",
+                value = "847",
+                caption = "Enrolled",
             ),
             DashboardStat(
-                id = "published_reports",
-                label = "Published reports",
+                id = "exams",
+                label = "Active exams",
                 value = "12",
-                caption = "This term",
+                caption = "Running",
+            ),
+            DashboardStat(
+                id = "reports",
+                label = "Reports due",
+                value = "3",
+                caption = "Pending",
+            ),
+            DashboardStat(
+                id = "batches",
+                label = "Batches",
+                value = "6",
+                caption = "Active",
             ),
         )
         UserRole.FACULTY -> listOf(
@@ -43,13 +55,13 @@ object FakeDashboardRepository : DashboardRepository {
     override fun getModuleCards(): List<DashboardModuleCard> = listOf(
         DashboardModuleCard(
             id = DashboardModuleId.STUDENTS,
-            title = "Student Details",
-            description = "Browse batches, search students, and open profiles.",
+            title = "Students",
+            description = "847 enrolled",
         ),
         DashboardModuleCard(
             id = DashboardModuleId.EXAMS,
-            title = "Examinations",
-            description = "Manage exam groups, results, and evaluation types.",
+            title = "Exams",
+            description = "12 active",
         ),
     )
 
@@ -60,7 +72,7 @@ object FakeDashboardRepository : DashboardRepository {
     )
 
     override fun getOverviewLine(role: UserRole): String = when (role) {
-        UserRole.ADMIN -> "Today: 2 timetable updates and 1 pending faculty approval."
+        UserRole.ADMIN -> "Mon, 14 Apr 2026"
         UserRole.FACULTY -> "Today: you have 1 grading queue item and 2 class reminders."
     }
 

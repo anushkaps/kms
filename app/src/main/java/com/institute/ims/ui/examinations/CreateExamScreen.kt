@@ -1,5 +1,6 @@
 package com.institute.ims.ui.examinations
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -12,12 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -34,10 +37,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,21 +74,6 @@ fun CreateExamScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text("New exam") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LedgerPalette.Plum,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                ),
-            )
-        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -97,24 +84,17 @@ fun CreateExamScreen(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Text(
-                    text = "Exam details",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = "Create a new exam entry with clear separation between exam type and evaluation method.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                CreateExamHeader(onBack = onBack)
 
                 state.errorMessage?.let { err ->
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                         ),
+                        modifier = Modifier.padding(horizontal = 20.dp),
                     ) {
                         Text(
                             text = err,
@@ -127,15 +107,14 @@ fun CreateExamScreen(
 
                 FormSectionCard(
                     title = "Exam identity",
-                    subtitle = "Core details: exam name, category, batch, subject, and group.",
+                    subtitle = "",
+                    modifier = Modifier.padding(horizontal = 20.dp),
                 ) {
-                    OutlinedTextField(
+                    CompactRowField(
+                        label = "Exam name",
                         value = state.title,
                         onValueChange = viewModel::onTitleChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Exam title") },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
+                        placeholder = "e.g. Data Structures — Final",
                     )
 
                     ExposedDropdownMenuBox(
@@ -153,7 +132,8 @@ fun CreateExamScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            shape = MaterialTheme.shapes.large,
+                            shape = RoundedCornerShape(6.dp),
+                            colors = compactFieldColors(),
                         )
                         ExposedDropdownMenu(
                             expanded = typeMenu,
@@ -178,19 +158,29 @@ fun CreateExamScreen(
                         val batchName = state.batches.find { it.id == state.batchId }?.let { b ->
                             "${b.name} (${b.code})"
                         }.orEmpty()
-                        OutlinedTextField(
-                            value = batchName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Batch") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchMenu)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            shape = MaterialTheme.shapes.large,
-                        )
+                        if (state.batches.size in 2..5) {
+                            CompactChipRow(
+                                label = "Batch",
+                                items = state.batches.map { it.id to it.code.removePrefix("CS-") },
+                                selectedId = state.batchId,
+                                onSelected = viewModel::onBatchChange,
+                            )
+                        } else {
+                            OutlinedTextField(
+                                value = batchName,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Batch") },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchMenu)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                                shape = RoundedCornerShape(6.dp),
+                                colors = compactFieldColors(),
+                            )
+                        }
                         ExposedDropdownMenu(
                             expanded = batchMenu,
                             onDismissRequest = { batchMenu = false },
@@ -207,14 +197,11 @@ fun CreateExamScreen(
                         }
                     }
 
-                    OutlinedTextField(
+                    CompactRowField(
+                        label = "Subject",
                         value = state.subjectName,
                         onValueChange = viewModel::onSubjectChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Subject / course") },
-                        placeholder = { Text("e.g. Operating Systems") },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
+                        placeholder = "e.g. Operating Systems",
                     )
 
                     ExposedDropdownMenuBox(
@@ -226,14 +213,15 @@ fun CreateExamScreen(
                             value = groupName,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Exam group") },
+                            label = { Text("Group / series") },
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupMenu)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            shape = MaterialTheme.shapes.large,
+                            shape = RoundedCornerShape(6.dp),
+                            colors = compactFieldColors(),
                         )
                         ExposedDropdownMenu(
                             expanded = groupMenu,
@@ -253,81 +241,48 @@ fun CreateExamScreen(
                 }
 
                 FormSectionCard(
-                    title = "Exam type",
-                    subtitle = "What is being assessed. Choose format and scoring range.",
+                    title = "Exam type - what is being assessed",
+                    subtitle = "Select the format and scoring method of this exam.",
+                    modifier = Modifier.padding(horizontal = 20.dp),
                 ) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        AssessmentMode.entries.forEach { mode ->
-                            FilterChip(
-                                selected = state.assessmentMode == mode,
-                                onClick = { viewModel.onAssessmentModeChange(mode) },
-                                label = { Text(mode.uiLabel()) },
-                            )
-                        }
-                    }
+                    CompactChipRow(
+                        label = "Format",
+                        items = AssessmentMode.entries.map { it.name to it.uiLabel() },
+                        selectedId = state.assessmentMode.name,
+                        onSelected = { id ->
+                            AssessmentMode.entries.firstOrNull { it.name == id }?.let(viewModel::onAssessmentModeChange)
+                        },
+                    )
 
-                    OutlinedTextField(
+                    CompactRowField(
+                        label = "Total marks",
                         value = state.maxMarksInput,
                         onValueChange = viewModel::onMaxMarksChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(maxScoreFieldLabel(state.assessmentMode)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
+                        placeholder = "100",
+                        keyboardType = KeyboardType.Decimal,
                     )
-                    Text(
-                        text = "Pass threshold in reports currently uses the default policy.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    CompactRowField(
+                        label = "Pass threshold",
+                        value = state.passThresholdInput,
+                        onValueChange = viewModel::onPassThresholdChange,
+                        placeholder = "40 marks",
+                        keyboardType = KeyboardType.Decimal,
                     )
                 }
 
                 FormSectionCard(
-                    title = "Evaluation method",
-                    subtitle = "How results are computed in reports and transcript-style outputs.",
+                    title = "Evaluation method - how results are computed",
+                    subtitle = "This determines how final scores map to transcripts.",
+                    modifier = Modifier.padding(horizontal = 20.dp),
                 ) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        EvaluationType.entries.forEach { type ->
-                            FilterChip(
-                                selected = state.evaluationType == type,
-                                onClick = { viewModel.onEvaluationTypeChange(type) },
-                                label = { Text(type.name) },
-                            )
-                        }
-                    }
-                }
-
-                FormSectionCard(
-                    title = "Schedule and status",
-                    subtitle = "Set timing and lifecycle state for this exam entry.",
-                ) {
-                    OutlinedTextField(
-                        value = state.scheduleLabel,
-                        onValueChange = viewModel::onScheduleChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Schedule") },
-                        placeholder = { Text("e.g. 15 May 2026 - 10:00") },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
+                    CompactChipRow(
+                        label = "Method",
+                        items = EvaluationType.entries.map { it.name to it.name },
+                        selectedId = state.evaluationType.name,
+                        onSelected = { id ->
+                            EvaluationType.entries.firstOrNull { it.name == id }?.let(viewModel::onEvaluationTypeChange)
+                        },
                     )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        ExamStatus.entries.forEach { st ->
-                            FilterChip(
-                                selected = state.status == st,
-                                onClick = { viewModel.onStatusChange(st) },
-                                label = { Text(statusLabel(st)) },
-                            )
-                        }
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -336,24 +291,23 @@ fun CreateExamScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-                TextButton(
-                    onClick = onBack,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Cancel")
-                }
                 FilledTonalButton(
                     onClick = { viewModel.save(onSaved) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = LedgerPalette.Plum,
                         contentColor = Color.White,
                     ),
+                    shape = RoundedCornerShape(10.dp),
                 ) {
-                    Text("Save exam ->")
+                    Text(
+                        text = "Save Exam  →",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
         }
@@ -364,12 +318,14 @@ fun CreateExamScreen(
 private fun FormSectionCard(
     title: String,
     subtitle: String,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(10.dp),
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -377,19 +333,157 @@ private fun FormSectionCard(
             content = {
                 Text(
                     text = title.uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
                     color = LedgerPalette.Plum,
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    content = {},
                 )
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    )
+                }
                 content()
             },
         )
     }
 }
+
+@Composable
+private fun CreateExamHeader(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .background(LedgerPalette.Plum)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                )
+            }
+            Text(
+                text = "Examinations",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.6f),
+            )
+        }
+        Text(
+            text = "New Exam",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White,
+        )
+        Text(
+            text = "Fill in details to create an exam.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.6f),
+        )
+    }
+}
+
+@Composable
+private fun CompactRowField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(top = 10.dp)
+                .weight(0.38f),
+            maxLines = 1,
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(0.62f),
+            placeholder = { Text(placeholder) },
+            singleLine = true,
+            shape = RoundedCornerShape(6.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            colors = compactFieldColors(),
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun CompactChipRow(
+    label: String,
+    items: List<Pair<String, String>>,
+    selectedId: String?,
+    onSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items.forEach { (id, display) ->
+                val selected = selectedId == id
+                FilterChip(
+                    selected = selected,
+                    onClick = { onSelected(id) },
+                    label = { Text(display) },
+                    shape = RoundedCornerShape(5.dp),
+                    border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = LedgerPalette.Plum,
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun compactFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = Color.Transparent,
+    unfocusedBorderColor = Color.Transparent,
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+)
 
 private fun statusLabel(status: ExamStatus): String = when (status) {
     ExamStatus.DRAFT -> "Draft"

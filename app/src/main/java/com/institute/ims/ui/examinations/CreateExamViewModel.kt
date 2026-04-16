@@ -49,6 +49,9 @@ class CreateExamViewModel(
 
     fun onMaxMarksChange(value: String) = patch { it.copy(maxMarksInput = value, errorMessage = null) }
 
+    fun onPassThresholdChange(value: String) =
+        patch { it.copy(passThresholdInput = value, errorMessage = null) }
+
     fun onGroupChange(groupId: String) = patch { it.copy(groupId = groupId, errorMessage = null) }
 
     fun onEvaluationTypeChange(type: EvaluationType) =

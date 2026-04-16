@@ -1,20 +1,17 @@
 package com.institute.ims.ui.common
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -39,66 +38,92 @@ fun SplashScreen(onFinished: () -> Unit) {
             .fillMaxSize()
             .background(LedgerPalette.Ink),
     ) {
+        // status-bar strip
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth()
+                .height(44.dp)
+                .background(LedgerPalette.Ink),
+        )
+
         Text(
-            text = "V2.1 DEMO",
-            style = MaterialTheme.typography.labelMedium,
-            color = Color(0xFF8D877B),
+            text = "v2.1 Demo",
+            color = Color(0xFF6E6A62),
+            fontWeight = FontWeight.W400,
+            fontSize = 10.sp,
+            lineHeight = 12.sp,
+            textAlign = TextAlign.End,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 28.dp, end = 24.dp),
+                .width(64.dp)
+                .padding(top = 56.dp, end = 16.dp),
         )
-        Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = LedgerPalette.Cobalt.copy(alpha = 0.2f),
-            ) {
-                Text(
-                    text = "[]",
-                    color = LedgerPalette.Cobalt,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                )
-            }
-            Spacer(modifier = Modifier.height(22.dp))
-            Text(
-                text = "LEDGER",
-                color = Color(0xFFF2EDE1),
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 6.sp,
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "INSTITUTE MANAGEMENT",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFF8D877B),
-                letterSpacing = 2.sp,
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            Box(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(1.dp)
-                    .background(Color(0xFF4C473E)),
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-            Text(
-                text = "St. Xavier's College of Engineering",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFD0C8B8),
-            )
-        }
+
+        // logo-group
+        LedgerMark(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 290.dp),
+        )
+
+        Text(
+            text = "LEDGER",
+            color = Color(0xFFF5F3EE),
+            fontWeight = FontWeight.W600,
+            fontSize = 32.sp,
+            lineHeight = 39.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .padding(top = 372.dp),
+        )
+
+        Text(
+            text = "INSTITUTE MANAGEMENT",
+            color = Color(0xFF6E6A62),
+            fontWeight = FontWeight.W500,
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .padding(top = 416.dp),
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 446.dp)
+                .width(48.dp)
+                .height(1.dp)
+                .background(Color(0xFF3A3732)),
+        )
+
+        Text(
+            text = "St. Xavier's College of Engineering",
+            color = Color(0xFFD4CFC5),
+            fontWeight = FontWeight.W400,
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .padding(top = 460.dp),
+        )
+
         Row(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 56.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .align(Alignment.TopCenter)
+                .padding(top = 784.dp),
         ) {
             Dot(active = true)
+            Box(modifier = Modifier.width(8.dp))
             Dot(active = false)
+            Box(modifier = Modifier.width(8.dp))
             Dot(active = false)
         }
     }
@@ -108,14 +133,72 @@ fun SplashScreen(onFinished: () -> Unit) {
 private fun Dot(active: Boolean) {
     Box(
         modifier = Modifier
-            .size(if (active) 9.dp else 8.dp)
+            .size(8.dp)
             .clip(CircleShape)
             .background(
                 if (active) {
-                    LedgerPalette.Cobalt
+                    Color(0xFF1B4FBF)
                 } else {
-                    Color(0xFF5F5A50)
+                    Color(0xFF3A3732)
                 },
             ),
+    )
+}
+
+@Composable
+private fun LedgerMark(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.size(64.dp),
+    ) {
+        // book-body
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 8.dp, top = 2.dp)
+                .width(48.dp)
+                .height(60.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFF1A1814)),
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 8.dp, top = 2.dp)
+                .width(48.dp)
+                .height(60.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .border(1.5.dp, Color(0xFF1B4FBF), RoundedCornerShape(6.dp)),
+        )
+
+        // spine
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 8.dp, top = 2.dp)
+                .width(9.dp)
+                .height(60.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color(0xFF1B4FBF)),
+        )
+
+        // rules
+        RuleLine(start = 22.dp, top = 18.dp, width = 28.dp)
+        RuleLine(start = 22.dp, top = 28.dp, width = 28.dp)
+        RuleLine(start = 22.dp, top = 38.dp, width = 16.dp)
+    }
+}
+
+@Composable
+private fun RuleLine(
+    start: Dp,
+    top: Dp,
+    width: Dp,
+) {
+    Box(
+        modifier = Modifier
+            .padding(start = start, top = top)
+            .width(width)
+            .height(1.5.dp)
+            .background(Color(0xFF1B4FBF)),
     )
 }

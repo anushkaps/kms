@@ -1,10 +1,9 @@
 package com.institute.ims.ui.studentdetails
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,45 +15,32 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardDefaults.cardColors
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.Batch
@@ -63,7 +49,6 @@ import com.institute.ims.data.model.StudentStatus
 import com.institute.ims.ui.common.LedgerPalette
 import com.institute.ims.utils.studentCategoryShortLabel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentListScreen(
     onBack: () -> Unit,
@@ -73,407 +58,351 @@ fun StudentListScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val batch2022 = state.batches.firstOrNull { it.code.contains("2022") }?.id
+    val grouped = state.students.groupBy { it.batchId }
+    val orderedBatches = state.batches.filter { grouped.containsKey(it.id) }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text("Students") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                actions = {
-                    TextButton(onClick = { viewModel.onResetAllFilters() }) {
-                        Text("Reset")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LedgerPalette.Forest,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White,
-                ),
-            )
-        },
-    ) { innerPadding ->
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F3EE)),
+    ) {
+        StudentHeader(
+            totalStudents = state.students.size,
+            totalBatches = state.batches.size,
+            query = state.searchQuery,
+            onBack = onBack,
+            onQueryChange = viewModel::onSearchQueryChange,
+            onSearchDone = { focusManager.clearFocus() },
+        )
+
+        FilterStrip(
+            isAll = state.statusFilter == null && state.batchIdFilter == null,
+            isCurrent = state.statusFilter == StudentStatus.CURRENT,
+            isFormer = state.statusFilter == StudentStatus.FORMER,
+            isBatch2022 = state.batchIdFilter == batch2022 && batch2022 != null,
+            onAll = {
+                viewModel.onStatusFilterChange(null)
+                viewModel.onBatchFilterChange(null)
+            },
+            onCurrent = {
+                viewModel.onBatchFilterChange(null)
+                viewModel.onStatusFilterChange(if (state.statusFilter == StudentStatus.CURRENT) null else StudentStatus.CURRENT)
+            },
+            onFormer = {
+                viewModel.onBatchFilterChange(null)
+                viewModel.onStatusFilterChange(if (state.statusFilter == StudentStatus.FORMER) null else StudentStatus.FORMER)
+            },
+            onBatch2022 = {
+                viewModel.onStatusFilterChange(null)
+                if (batch2022 != null) {
+                    viewModel.onBatchFilterChange(if (state.batchIdFilter == batch2022) null else batch2022)
+                }
+            },
+        )
+
         LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            item {
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = viewModel::onSearchQueryChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search by name, roll no...") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.Search,
-                            contentDescription = "Search",
-                        )
-                    },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LedgerPalette.Forest,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedContainerColor = LedgerPalette.Forest.copy(alpha = 0.08f),
-                        unfocusedContainerColor = LedgerPalette.Forest.copy(alpha = 0.08f),
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { focusManager.clearFocus() },
-                    ),
-                )
-            }
-
-            item {
-                SectionLabel("Batch")
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = state.batchIdFilter == null,
-                        onClick = { viewModel.onBatchFilterChange(null) },
-                        label = { Text("All") },
-                    )
-                    state.batches.forEach { batch ->
-                        FilterChip(
-                            selected = state.batchIdFilter == batch.id,
-                            onClick = {
-                                viewModel.onBatchFilterChange(
-                                    if (state.batchIdFilter == batch.id) null else batch.id,
-                                )
-                            },
-                            label = { Text(batch.code) },
-                        )
-                    }
-                }
-            }
-
-            item {
-                SectionLabel("Status")
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = state.statusFilter == null,
-                        onClick = { viewModel.onStatusFilterChange(null) },
-                        label = { Text("All") },
-                    )
-                    FilterChip(
-                        selected = state.statusFilter == StudentStatus.CURRENT,
-                        onClick = {
-                            viewModel.onStatusFilterChange(
-                                if (state.statusFilter == StudentStatus.CURRENT) null else StudentStatus.CURRENT,
-                            )
-                        },
-                        label = { Text("Current") },
-                    )
-                    FilterChip(
-                        selected = state.statusFilter == StudentStatus.FORMER,
-                        onClick = {
-                            viewModel.onStatusFilterChange(
-                                if (state.statusFilter == StudentStatus.FORMER) null else StudentStatus.FORMER,
-                            )
-                        },
-                        label = { Text("Former") },
-                    )
-                }
-            }
-
-            item {
-                Card(
-                    onClick = { viewModel.onToggleAdvancedPanel() },
-                    colors = CardDefaults.cardColors(
-                        containerColor = LedgerPalette.Surface,
-                    ),
-                    shape = MaterialTheme.shapes.large,
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outlineVariant,
-                    ),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.FilterList,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Column {
-                                Text(
-                                    text = "Advanced filters",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                                Text(
-                                    text = "Course and category",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        Icon(
-                            imageVector = if (state.advancedPanelExpanded) {
-                                Icons.Outlined.ExpandLess
-                            } else {
-                                Icons.Outlined.ExpandMore
-                            },
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-
-            item {
-                AnimatedVisibility(visible = state.advancedPanelExpanded) {
-                    Column(
-                        modifier = Modifier.padding(bottom = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        SectionLabel("Course")
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            FilterChip(
-                                selected = state.courseLabelFilter == null,
-                                onClick = { viewModel.onCourseFilterChange(null) },
-                                label = { Text("All") },
-                            )
-                            state.courseLabels.forEach { course ->
-                                FilterChip(
-                                    selected = state.courseLabelFilter == course,
-                                    onClick = {
-                                        viewModel.onCourseFilterChange(
-                                            if (state.courseLabelFilter == course) null else course,
-                                        )
-                                    },
-                                    label = {
-                                        Text(
-                                            text = course,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                        SectionLabel("Category")
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            FilterChip(
-                                selected = state.categoryFilter == null,
-                                onClick = { viewModel.onCategoryFilterChange(null) },
-                                label = { Text("All") },
-                            )
-                            state.categories.forEach { cat ->
-                                FilterChip(
-                                    selected = state.categoryFilter == cat,
-                                    onClick = {
-                                        viewModel.onCategoryFilterChange(
-                                            if (state.categoryFilter == cat) null else cat,
-                                        )
-                                    },
-                                    label = { Text(cat) },
-                                )
-                            }
-                        }
-                        TextButton(onClick = { viewModel.onClearAdvancedFilters() }) {
-                            Text("Clear course & category")
-                        }
-                    }
-                }
-            }
-
-            item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Directory",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = LedgerPalette.Forest,
-                    )
-                    Text(
-                        text = "${state.students.size} shown",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            if (state.students.isEmpty()) {
+            if (orderedBatches.isEmpty()) {
                 item {
                     Text(
-                        text = "No students match these filters. Adjust search or filters, or tap Reset.",
+                        text = "No students match this filter.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 24.dp),
+                        color = Color(0xFF6E6A62),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
                     )
                 }
             } else {
-                items(state.students, key = { it.id }) { student ->
-                    StudentRowCard(
-                        student = student,
-                        batch = state.batches.find { it.id == student.batchId },
-                        onClick = {
-                            focusManager.clearFocus()
-                            onOpenProfile(student.id)
-                        },
+                items(orderedBatches, key = { it.id }) { batch ->
+                    val students = grouped[batch.id].orEmpty()
+                    BatchSection(
+                        batch = batch,
+                        students = students,
+                        onOpenProfile = onOpenProfile,
                     )
                 }
             }
-
-            item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
 }
 
 @Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = LedgerPalette.Forest,
-        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
-    )
+private fun StudentHeader(
+    totalStudents: Int,
+    totalBatches: Int,
+    query: String,
+    onBack: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onSearchDone: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .background(Color(0xFF0F7A5A)),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .background(Color(0xFF0F7A5A)),
+        )
+        Text(
+            text = "< Dashboard",
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 52.dp)
+                .clickable(onClick = onBack),
+        )
+        Text(
+            text = "Students",
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 26.sp,
+            lineHeight = 31.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 72.dp),
+        )
+        Text(
+            text = "$totalStudents enrolled · $totalBatches batches",
+            color = Color.White.copy(alpha = 0.65f),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 108.dp),
+        )
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 136.dp, end = 24.dp)
+                .fillMaxWidth()
+                .height(40.dp),
+            placeholder = {
+                Text(
+                    text = "Search by name, roll no...",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.65f),
+                )
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(20.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White.copy(alpha = 0.12f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.12f),
+                focusedBorderColor = Color.White.copy(alpha = 0.2f),
+                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = Color.White,
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearchDone() }),
+        )
+    }
 }
 
 @Composable
-private fun StudentRowCard(
-    student: Student,
-    batch: Batch?,
-    onClick: () -> Unit,
+private fun FilterStrip(
+    isAll: Boolean,
+    isCurrent: Boolean,
+    isFormer: Boolean,
+    isBatch2022: Boolean,
+    onAll: () -> Unit,
+    onCurrent: () -> Unit,
+    onFormer: () -> Unit,
+    onBatch2022: () -> Unit,
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp)
-            .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        colors = cardColors(
-            containerColor = LedgerPalette.Surface,
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            .height(48.dp)
+            .border(1.dp, Color(0xFFD4CFC5))
+            .padding(horizontal = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        ListChip("All", 44.dp, isAll, onAll)
+        ListChip("Current", 76.dp, isCurrent, onCurrent)
+        ListChip("Former", 68.dp, isFormer, onFormer)
+        ListChip("Batch 2022", 100.dp, isBatch2022, onBatch2022)
+    }
+}
+
+@Composable
+private fun ListChip(
+    label: String,
+    width: androidx.compose.ui.unit.Dp,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .width(width)
+            .height(24.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) Color(0xFF0F7A5A) else Color.White,
+        border = BorderStroke(
+            1.dp,
+            if (selected) Color(0xFF0F7A5A) else Color(0xFFD4CFC5),
+        ),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (selected) Color.White else Color(0xFF6E6A62),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BatchSection(
+    batch: Batch,
+    students: List<Student>,
+    onOpenProfile: (String) -> Unit,
+) {
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = LedgerPalette.Forest.copy(alpha = 0.12f),
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Outlined.Person,
-                        contentDescription = null,
-                        tint = LedgerPalette.Forest,
-                    )
-                }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = student.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = student.studentNumber,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = batch?.code ?: student.batchId,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = LedgerPalette.Forest,
-                    )
-                    StatusPill(student.status)
-                    Text(
-                        text = studentCategoryShortLabel(student.category),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
+            Text(
+                text = "${batch.code.uppercase()}",
+                color = Color(0xFF6E6A62),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.width(130.dp),
+            )
+            HorizontalDivider(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+                color = Color(0xFFD4CFC5),
+            )
+            Text(
+                text = "${students.size} students",
+                color = Color(0xFF6E6A62),
+                fontSize = 9.sp,
+                modifier = Modifier.width(60.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+        ) {
+            students.forEachIndexed { index, student ->
+                StudentRowLine(
+                    student = student,
+                    onClick = { onOpenProfile(student.id) },
+                    accentSet = index % 4,
+                )
+                if (index < students.lastIndex) {
+                    HorizontalDivider(color = Color(0xFFEEECE5))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StudentRowLine(
+    student: Student,
+    onClick: () -> Unit,
+    accentSet: Int,
+) {
+    val (avatarBg, avatarFg) = when (accentSet) {
+        0 -> Pair(Color(0xFFEAF4EF), Color(0xFF0F7A5A))
+        1 -> Pair(Color(0xFFF3EDF9), Color(0xFF7B3FBE))
+        2 -> Pair(Color(0xFFEEF2FB), Color(0xFF1B4FBF))
+        else -> Pair(Color(0xFFFDF0E5), Color(0xFFB85C00))
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(avatarBg, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = studentInitials(student.name),
+                color = avatarFg,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = student.name,
+                color = LedgerPalette.Ink,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${student.studentNumber} · ${studentCategoryShortLabel(student.category)}",
+                color = Color(0xFF6E6A62),
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        StatusPill(student.status)
     }
 }
 
 @Composable
 private fun StatusPill(status: StudentStatus) {
-    val (label, container, content) = when (status) {
-        StudentStatus.CURRENT -> Triple(
-            "Active",
-            LedgerPalette.Forest.copy(alpha = 0.15f),
-            LedgerPalette.Forest,
-        )
-        StudentStatus.FORMER -> Triple(
-            "Alum",
-            Color(0xFFFBE8EA),
-            Color(0xFF9A3A48),
-        )
+    val (label, bg, fg) = when (status) {
+        StudentStatus.CURRENT -> Triple("Active", Color(0xFFEAF4EF), Color(0xFF0F7A5A))
+        StudentStatus.FORMER -> Triple("Alumni", Color(0xFFFDECEA), Color(0xFFC0352B))
     }
     Surface(
-        shape = RoundedCornerShape(percent = 50),
-        color = container,
+        modifier = Modifier
+            .width(44.dp)
+            .height(18.dp),
+        shape = RoundedCornerShape(4.dp),
+        color = bg,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = content,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-        )
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = label,
+                color = fg,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+private fun studentInitials(name: String): String {
+    val parts = name.trim().split(" ").filter { it.isNotBlank() }
+    return when {
+        parts.isEmpty() -> "ST"
+        parts.size == 1 -> parts.first().take(2).uppercase()
+        else -> "${parts[0].first()}${parts[1].first()}".uppercase()
     }
 }

@@ -13,6 +13,7 @@ data class CreateExamUiState(
     val batchId: String = "",
     val subjectName: String = "",
     val maxMarksInput: String = "100",
+    val passThresholdInput: String = "40",
     val groupId: String = "",
     val evaluationType: EvaluationType = EvaluationType.GPA,
     val scheduleLabel: String = "",

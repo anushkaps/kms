@@ -1,10 +1,11 @@
 package com.institute.ims.ui.studentdetails
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,25 +14,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -39,14 +31,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.Student
 import com.institute.ims.data.model.StudentStatus
-import com.institute.ims.ui.common.LedgerPalette
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentProfileScreen(
     studentId: String,
@@ -58,72 +50,36 @@ fun StudentProfileScreen(
         factory = StudentProfileViewModel.Factory(studentId),
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val student = state.student
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = state.student?.name ?: "Student",
-                        maxLines = 1,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LedgerPalette.Forest,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                ),
-            )
-        },
-    ) { innerPadding ->
-        val student = state.student
-        when {
-            state.notFound -> StudentNotFoundBody(
-                studentId = studentId,
-                modifier = Modifier.padding(innerPadding),
-            )
-            student != null -> StudentProfileBody(
-                student = student,
-                batchDisplay = state.batchDisplay,
-                modifier = Modifier.padding(innerPadding),
-            )
-            else -> Box(modifier = Modifier.padding(innerPadding))
-        }
+    when {
+        state.notFound -> StudentNotFoundBody(studentId = studentId, modifier = modifier)
+        student != null -> StudentProfileBody(
+            student = student,
+            batchDisplay = state.batchDisplay,
+            onBack = onBack,
+            modifier = modifier,
+        )
+        else -> Box(modifier = modifier.fillMaxSize().background(Color(0xFFF5F3EE)))
     }
 }
 
 @Composable
-private fun StudentNotFoundBody(
-    studentId: String,
-    modifier: Modifier = Modifier,
-) {
+private fun StudentNotFoundBody(studentId: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(Color(0xFFF5F3EE))
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "Student not found",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
+        Text("Student not found", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "No student record for \"$studentId\". Go back and choose someone from the directory.",
+            text = "No student record for \"$studentId\".",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color(0xFF6E6A62),
         )
     }
 }
@@ -132,215 +88,234 @@ private fun StudentNotFoundBody(
 private fun StudentProfileBody(
     student: Student,
     batchDisplay: String?,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F3EE)),
+        contentPadding = PaddingValues(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        item { ProfileHeader(student = student, batchDisplay = batchDisplay, onBack = onBack) }
         item {
-            ProfileHero(
-                student = student,
-                batchDisplay = batchDisplay,
+            ProfileSectionCard(
+                title = "ACADEMIC STATUS",
+                rows = listOf(
+                    "Programme" to student.courseLabel,
+                    "Semester" to semesterFromAcademicYear(student.academicYearLabel),
+                    "CGPA" to cgpaFromStudent(student),
+                    "Status" to if (student.status == StudentStatus.CURRENT) "Enrolled" else "Former",
+                ),
             )
         }
         item {
-            InfoSectionCard(
-                title = "Academic status",
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.School,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                },
-            ) {
-                ProfileRow("Batch", batchDisplay ?: student.batchId)
-                ProfileRow("Programme", student.courseLabel)
-                ProfileRow("Academic year", student.academicYearLabel)
-                ProfileRow("Category", student.category)
-            }
+            ProfileSectionCard(
+                title = "IDENTITY",
+                rows = listOf(
+                    "DOB" to "12 Mar 2003",
+                    "Gender" to inferredGender(student),
+                    "Category" to student.category,
+                ),
+            )
         }
         item {
-            InfoSectionCard(
-                title = "Identity",
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Email,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                },
-            ) {
-                ProfileRow("Email", student.email)
-                ProfileRow("Phone", student.phone)
-            }
-        }
-        if (!student.guardianName.isNullOrBlank()) {
-            item {
-                InfoSectionCard(
-                    title = "Guardian",
-                    leadingIcon = null,
-                ) {
-                    ProfileRow("Name", student.guardianName!!)
-                }
-            }
-        }
-        item {
-            InfoSectionCard(
-                title = "Record",
-                leadingIcon = null,
-            ) {
-                ProfileRow("Status", if (student.status == StudentStatus.CURRENT) "Current" else "Former")
-                ProfileRow("Record ID", student.id)
-            }
+            ProfileSectionCard(
+                title = "GUARDIAN",
+                rows = listOf(
+                    "Name" to (student.guardianName ?: "Not Available"),
+                    "Contact" to student.phone,
+                ),
+            )
         }
     }
 }
 
 @Composable
-private fun ProfileHero(
+private fun ProfileHeader(
     student: Student,
     batchDisplay: String?,
+    onBack: () -> Unit,
 ) {
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = LedgerPalette.Forest,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.Start,
+    Column {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(Color(0xFF0F7A5A)),
         ) {
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .background(Color(0xFF0F7A5A)),
+            )
+            Text(
+                text = "< Students",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
+                modifier = Modifier
+                    .padding(start = 24.dp, top = 52.dp)
+                    .clickable(onClick = onBack),
+            )
+            Box(
+                modifier = Modifier
+                    .padding(start = 24.dp, top = 72.dp)
+                    .size(56.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.CenterStart,
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = initials(student.name),
-                    style = MaterialTheme.typography.headlineSmall,
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.Center),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = student.name,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
                 color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 22.sp,
+                lineHeight = 27.sp,
+                modifier = Modifier.padding(start = 92.dp, top = 78.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = student.studentNumber,
-                style = MaterialTheme.typography.titleSmall,
-                color = Color(0xFFE5F4EE),
+                text = "Roll No. ${student.studentNumber}",
+                color = Color.White.copy(alpha = 0.65f),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                modifier = Modifier.padding(start = 92.dp, top = 108.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = batchDisplay ?: student.batchId,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFD5EEE5),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            StatusBadge(student.status)
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Surface(
+                modifier = Modifier
+                    .padding(start = 92.dp, top = 130.dp)
+                    .width(200.dp)
+                    .height(20.dp),
+                shape = RoundedCornerShape(4.dp),
+                color = Color.White.copy(alpha = 0.18f),
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Email,
-                    contentDescription = null,
-                    tint = Color(0xFFE5F4EE),
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = student.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
-                )
+                Box(contentAlignment = Alignment.CenterStart) {
+                    Text(
+                        text = profileBadgeText(student, batchDisplay),
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(start = 8.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
+        }
+        ProfileTabs()
+    }
+}
+
+@Composable
+private fun ProfileTabs() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .background(Color(0xFF0B6348)),
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .background(Color.White.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("Overview", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Box(modifier = Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Results", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+        }
+        Box(modifier = Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Attendance", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
         }
     }
 }
 
 @Composable
-private fun StatusBadge(status: StudentStatus) {
-    val (label, bg, fg) = when (status) {
-        StudentStatus.CURRENT -> Triple(
-            "Active",
-            Color.White.copy(alpha = 0.2f),
-            Color.White,
-        )
-        StudentStatus.FORMER -> Triple(
-            "Alumni",
-            Color(0xFFFFE7EB),
-            Color(0xFF9C3A4A),
-        )
-    }
-    Surface(
-        shape = RoundedCornerShape(percent = 50),
-        color = bg,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = fg,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-        )
-    }
-}
-
-@Composable
-private fun InfoSectionCard(
+private fun ProfileSectionCard(
     title: String,
-    leadingIcon: (@Composable () -> Unit)?,
-    content: @Composable ColumnScope.() -> Unit,
+    rows: List<Pair<String, String>>,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = LedgerPalette.Surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                leadingIcon?.invoke()
-                Text(
-                    text = title.uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = LedgerPalette.Forest,
-                )
+        Column(modifier = Modifier.padding(top = 12.dp, bottom = 10.dp)) {
+            Text(
+                text = title,
+                color = Color(0xFF0F7A5A),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 14.dp),
+            )
+            HorizontalDivider(color = Color(0xFFEEECE5), modifier = Modifier.padding(top = 6.dp))
+            rows.forEachIndexed { index, (label, value) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = label,
+                        color = Color(0xFF6E6A62),
+                        fontSize = 10.sp,
+                    )
+                    Text(
+                        text = value,
+                        color = Color(0xFF1A1814),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (index < rows.lastIndex) {
+                    HorizontalDivider(color = Color(0xFFEEECE5))
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
         }
     }
 }
 
-@Composable
-private fun ProfileRow(label: String, value: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
+private fun profileBadgeText(student: Student, batchDisplay: String?): String {
+    val status = if (student.status == StudentStatus.CURRENT) "Active" else "Former"
+    val batch = batchDisplay?.substringAfter("(")?.substringBefore(")") ?: student.batchId
+    return "$status · ${student.category} · Batch $batch"
+}
+
+private fun semesterFromAcademicYear(year: String): String {
+    val firstDigits = year.filter { it.isDigit() }
+    return if (firstDigits.length >= 2) "7th · $year" else year
+}
+
+private fun cgpaFromStudent(student: Student): String {
+    val seed = student.studentNumber.filter { it.isDigit() }.takeLast(2).toIntOrNull() ?: 42
+    val value = 7.5 + (seed % 20) / 20.0
+    return "%.2f / 10".format(value)
+}
+
+private fun inferredGender(student: Student): String {
+    return if (student.name.trim().endsWith("a", ignoreCase = true)) "Female" else "Male"
 }
 
 private fun initials(name: String): String {

@@ -120,6 +120,16 @@ class DashboardViewModel(
                 ),
             )
         }
+        if (newsNavHint(ql)) {
+            add(
+                DashboardNavSuggestion(
+                    id = "nav-news",
+                    title = "Open latest news",
+                    subtitle = "View all institute updates",
+                    action = DashboardNavAction.OpenNews(q),
+                ),
+            )
+        }
         if (regionalNavHint(ql)) {
             add(
                 DashboardNavSuggestion(
@@ -172,7 +182,7 @@ class DashboardViewModel(
                         id = "news-${item.id}",
                         title = "Latest news: ${item.title}",
                         subtitle = item.tag ?: "Institute update",
-                        action = DashboardNavAction.FocusNews(item.id),
+                        action = DashboardNavAction.OpenNews(item.title),
                     ),
                 )
             }
@@ -180,11 +190,16 @@ class DashboardViewModel(
         return out.take(12)
     }
 
-    fun onQuickChipClick(label: String, onOpenStudents: () -> Unit, onOpenExams: () -> Unit) {
+    fun onQuickChipClick(
+        label: String,
+        onOpenStudents: () -> Unit,
+        onOpenExams: () -> Unit,
+        onOpenNews: () -> Unit,
+    ) {
         when (label) {
             "Students" -> onOpenStudents()
             "Exams" -> onOpenExams()
-            "News" -> onSearchQueryChange("")
+            "News" -> onOpenNews()
             else -> Unit
         }
     }
@@ -217,6 +232,11 @@ class DashboardViewModel(
             "region",
             "i18n",
         )
+        return hints.any { q.contains(it) }
+    }
+
+    private fun newsNavHint(q: String): Boolean {
+        val hints = listOf("news", "notice", "update", "announcement", "latest")
         return hints.any { q.contains(it) }
     }
 
