@@ -59,33 +59,6 @@ fun SplashScreen(
                 .fillMaxSize()
                 .systemBarsPadding(),
         ) {
-            Text(
-                text = if (fromDashboard) "← Dashboard" else "Skip",
-                color = Color(0xFF6E6A62),
-                fontWeight = FontWeight.W500,
-                fontSize = 11.sp,
-                lineHeight = 13.sp,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 24.dp, top = 56.dp)
-                    .clickable {
-                        if (fromDashboard) onBackToDashboard() else onContinueToRoleSelect()
-                    },
-            )
-
-            Text(
-                text = "v2.1 Demo",
-                color = Color(0xFF6E6A62),
-                fontWeight = FontWeight.W400,
-                fontSize = 10.sp,
-                lineHeight = 12.sp,
-                textAlign = TextAlign.End,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .width(64.dp)
-                    .padding(top = 56.dp, end = 16.dp),
-            )
-
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
@@ -118,6 +91,33 @@ fun SplashScreen(
                     }
                 }
             }
+
+            Text(
+                text = if (fromDashboard) "← Dashboard" else "Skip",
+                color = Color(0xFF6E6A62),
+                fontWeight = FontWeight.W500,
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 24.dp, top = 56.dp)
+                    .clickable {
+                        if (fromDashboard) onBackToDashboard() else onContinueToRoleSelect()
+                    },
+            )
+
+            Text(
+                text = "v2.1 Demo",
+                color = Color(0xFF6E6A62),
+                fontWeight = FontWeight.W400,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .width(64.dp)
+                    .padding(top = 56.dp, end = 16.dp),
+            )
         }
     }
 }
