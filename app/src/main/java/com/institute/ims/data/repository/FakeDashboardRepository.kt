@@ -5,65 +5,98 @@ import com.institute.ims.data.model.DashboardCapabilityHighlight
 import com.institute.ims.data.model.DashboardModuleCard
 import com.institute.ims.data.model.DashboardModuleId
 import com.institute.ims.data.model.DashboardStat
+import com.institute.ims.data.model.ExamStatus
+import com.institute.ims.data.model.StudentFilterCriteria
+import com.institute.ims.data.model.StudentStatus
 import com.institute.ims.data.model.UserRole
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/** Static dashboard stats, module cards, and quick-action chip labels. */
+/** Dashboard stats and module copy derived from the same seed repositories as the rest of the app. */
 object FakeDashboardRepository : DashboardRepository {
-    override fun getSummaryStats(role: UserRole): List<DashboardStat> = when (role) {
-        UserRole.ADMIN -> listOf(
-            DashboardStat(
-                id = "students",
-                label = "Students",
-                value = "847",
-                caption = "Enrolled",
+
+    private fun currentStudentCount(): Int =
+        FakeStudentRepository.getStudents(StudentFilterCriteria(status = StudentStatus.CURRENT)).size
+
+    private fun batchCount(): Int = FakeStudentRepository.getBatches().size
+
+    private fun activeExamCount(): Int =
+        FakeExamRepository.getExams().count { it.status != ExamStatus.COMPLETED }
+
+    private fun draftExamCount(): Int =
+        FakeExamRepository.getExams().count { it.status == ExamStatus.DRAFT }
+
+    private fun publishedExamCount(): Int =
+        FakeExamRepository.getExams().count { it.status == ExamStatus.PUBLISHED }
+
+    override fun getSummaryStats(role: UserRole): List<DashboardStat> {
+        val students = currentStudentCount()
+        val exams = activeExamCount()
+        val batches = batchCount()
+        val drafts = draftExamCount()
+        val published = publishedExamCount()
+        return when (role) {
+            UserRole.ADMIN -> listOf(
+                DashboardStat(
+                    id = "students",
+                    label = "Students",
+                    value = students.toString(),
+                    caption = "Enrolled",
+                ),
+                DashboardStat(
+                    id = "exams",
+                    label = "Active exams",
+                    value = exams.toString(),
+                    caption = "Running",
+                ),
+                DashboardStat(
+                    id = "reports",
+                    label = "Reports due",
+                    value = drafts.toString(),
+                    caption = "Pending",
+                ),
+                DashboardStat(
+                    id = "batches",
+                    label = "Batches",
+                    value = batches.toString(),
+                    caption = "Active",
+                ),
+            )
+            UserRole.FACULTY -> listOf(
+                DashboardStat(
+                    id = "grading_queue",
+                    label = "Grading queue",
+                    value = drafts.toString(),
+                    caption = "Draft papers",
+                ),
+                DashboardStat(
+                    id = "upcoming_exams",
+                    label = "Upcoming exams",
+                    value = published.toString(),
+                    caption = "Next 7 days",
+                ),
+            )
+        }
+    }
+
+    override fun getModuleCards(): List<DashboardModuleCard> {
+        val students = currentStudentCount()
+        val exams = activeExamCount()
+        return listOf(
+            DashboardModuleCard(
+                id = DashboardModuleId.STUDENTS,
+                title = "Students",
+                description = "$students enrolled",
             ),
-            DashboardStat(
-                id = "exams",
-                label = "Active exams",
-                value = "12",
-                caption = "Running",
-            ),
-            DashboardStat(
-                id = "reports",
-                label = "Reports due",
-                value = "3",
-                caption = "Pending",
-            ),
-            DashboardStat(
-                id = "batches",
-                label = "Batches",
-                value = "6",
-                caption = "Active",
-            ),
-        )
-        UserRole.FACULTY -> listOf(
-            DashboardStat(
-                id = "grading_queue",
-                label = "Grading queue",
-                value = "1",
-                caption = "Draft papers",
-            ),
-            DashboardStat(
-                id = "upcoming_exams",
-                label = "Upcoming exams",
-                value = "2",
-                caption = "Next 7 days",
+            DashboardModuleCard(
+                id = DashboardModuleId.EXAMS,
+                title = "Exams",
+                description = "$exams active",
             ),
         )
     }
-
-    override fun getModuleCards(): List<DashboardModuleCard> = listOf(
-        DashboardModuleCard(
-            id = DashboardModuleId.STUDENTS,
-            title = "Students",
-            description = "847 enrolled",
-        ),
-        DashboardModuleCard(
-            id = DashboardModuleId.EXAMS,
-            title = "Exams",
-            description = "12 active",
-        ),
-    )
 
     override fun getQuickChipLabels(): List<String> = listOf(
         "Students",
@@ -71,9 +104,15 @@ object FakeDashboardRepository : DashboardRepository {
         "News",
     )
 
-    override fun getOverviewLine(role: UserRole): String = when (role) {
-        UserRole.ADMIN -> "Mon, 14 Apr 2026"
-        UserRole.FACULTY -> "Today: you have 1 grading queue item and 2 class reminders."
+    override fun getOverviewLine(role: UserRole): String {
+        val today = LocalDate.now(ZoneId.systemDefault())
+        val fmt = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.getDefault())
+        return when (role) {
+            UserRole.ADMIN -> today.format(fmt)
+            UserRole.FACULTY -> "Today: ${draftExamCount()} grading queue item(s) · ${
+                publishedExamCount()
+            } published paper(s). · ${today.format(fmt)}"
+        }
     }
 
     override fun getCapabilityHighlights(): List<DashboardCapabilityHighlight> = listOf(

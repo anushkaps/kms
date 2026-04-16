@@ -13,4 +13,10 @@ data class Exam(
     val scheduleLabel: String,
     val status: ExamStatus,
     val assessmentMode: AssessmentMode,
+    /** When [assessmentMode] is [AssessmentMode.MARKS], explicit pass line on max scale. */
+    val passMarksThreshold: Double? = null,
+    val gradeSchemeName: String? = null,
+    val passingGradeLabel: String? = null,
+    val customSchemeName: String? = null,
+    val customCriteriaSummary: String? = null,
 )

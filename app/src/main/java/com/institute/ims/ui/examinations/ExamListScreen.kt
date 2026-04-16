@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.Exam
+import com.institute.ims.data.model.ExamGroup
 import com.institute.ims.ui.common.LedgerPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,41 +69,32 @@ fun ExamListScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var examFilter by rememberSaveable { mutableStateOf(ExamListFilter.ALL) }
-    val filteredExams = remember(state.exams, searchQuery, examFilter) {
+    val filteredExams = remember(state.exams, searchQuery) {
         val query = searchQuery.trim()
-        val byType = state.exams.filter { exam ->
-            when (examFilter) {
-                ExamListFilter.ALL -> true
-                ExamListFilter.SEMESTER -> exam.examType.equals("Final", ignoreCase = true)
-                ExamListFilter.INTERNAL -> {
-                    exam.examType.equals("Mid-term", ignoreCase = true) ||
-                        exam.examType.equals("Quiz", ignoreCase = true)
-                }
-                ExamListFilter.CUSTOM -> {
-                    !exam.examType.equals("Final", ignoreCase = true) &&
-                        !exam.examType.equals("Mid-term", ignoreCase = true) &&
-                        !exam.examType.equals("Quiz", ignoreCase = true)
-                }
-            }
-        }
-        if (query.isEmpty()) byType else {
-            byType.filter { exam ->
+        if (query.isEmpty()) {
+            state.exams
+        } else {
+            state.exams.filter { exam ->
                 exam.title.contains(query, ignoreCase = true) ||
                     exam.subjectName.contains(query, ignoreCase = true) ||
-                    exam.batchLabel.contains(query, ignoreCase = true)
+                    exam.batchLabel.contains(query, ignoreCase = true) ||
+                    exam.id.contains(query, ignoreCase = true)
             }
         }
     }
-    val groupedExams = remember(filteredExams) {
-        filteredExams.groupBy { examSectionLabel(it) }
+    val groupedExams = remember(filteredExams, state.groups) {
+        examsGroupedByAssessmentGroup(filteredExams, state.groups)
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            Box(modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)) {
+            Box(
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(end = 8.dp, bottom = 8.dp),
+            ) {
                 FloatingActionButton(
                     onClick = onCreateExam,
                     containerColor = LedgerPalette.Plum,
@@ -131,9 +123,10 @@ fun ExamListScreen(
                 )
             }
             item {
-                FilterStrip(
-                    selected = examFilter,
-                    onSelected = { examFilter = it },
+                AssessmentGroupFilterStrip(
+                    groups = state.groups,
+                    selectedGroupId = state.selectedGroupId,
+                    onGroupSelected = viewModel::onGroupFilterChange,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -148,10 +141,10 @@ fun ExamListScreen(
                     )
                 }
             } else {
-                groupedExams.forEach { (groupLabel, exams) ->
+                groupedExams.forEach { (sectionTitle, exams) ->
                     item {
                         Text(
-                            text = groupLabel.uppercase(),
+                            text = sectionTitle.uppercase(),
                             style = MaterialTheme.typography.labelMedium,
                             color = LedgerPalette.Plum,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
@@ -182,7 +175,6 @@ private fun HeaderBlock(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding()
             .background(LedgerPalette.Plum)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -247,9 +239,10 @@ private fun HeaderBlock(
 }
 
 @Composable
-private fun FilterStrip(
-    selected: ExamListFilter,
-    onSelected: (ExamListFilter) -> Unit,
+private fun AssessmentGroupFilterStrip(
+    groups: List<ExamGroup>,
+    selectedGroupId: String?,
+    onGroupSelected: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -257,42 +250,84 @@ private fun FilterStrip(
         color = MaterialTheme.colorScheme.background,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            ExamListFilter.entries.forEach { filter ->
+            Text(
+                text = "Assessment group",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 FilterChip(
-                    selected = selected == filter,
-                    onClick = { onSelected(filter) },
-                    label = { Text(filter.label) },
+                    selected = selectedGroupId == null,
+                    onClick = { onGroupSelected(null) },
+                    label = { Text("All") },
                     shape = RoundedCornerShape(percent = 50),
-                    border = if (selected == filter) null else BorderStroke(
+                    border = if (selectedGroupId == null) null else BorderStroke(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant,
                     ),
                 )
+                groups.forEach { group ->
+                    val title = assessmentGroupChipTitle(group)
+                    FilterChip(
+                        selected = selectedGroupId == group.id,
+                        onClick = {
+                            onGroupSelected(
+                                if (selectedGroupId == group.id) null else group.id,
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        shape = RoundedCornerShape(percent = 50),
+                        border = if (selectedGroupId == group.id) null else BorderStroke(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                    )
+                }
             }
         }
     }
 }
 
-private enum class ExamListFilter(val label: String) {
-    ALL("All"),
-    SEMESTER("Semester"),
-    INTERNAL("Internal"),
-    CUSTOM("Custom"),
+/** Short labels for chips; list sections use full [ExamGroup.name]. */
+private fun assessmentGroupChipTitle(group: ExamGroup): String = when (group.id) {
+    "grp-finals" -> "End-term finals"
+    "grp-spring" -> "Spring session"
+    else -> group.name
 }
 
-private fun examSectionLabel(exam: Exam): String = when {
-    exam.examType.equals("Final", ignoreCase = true) -> "Semester exams - May 2025"
-    exam.examType.equals("Mid-term", ignoreCase = true) ||
-        exam.examType.equals("Quiz", ignoreCase = true) -> "Internal assessments - Apr 2025"
-    else -> "Custom assessments"
+private fun examsGroupedByAssessmentGroup(
+    exams: List<Exam>,
+    groups: List<ExamGroup>,
+): List<Pair<String, List<Exam>>> {
+    val byGroupId = exams.groupBy { it.groupId }
+    val ordered = groups.mapNotNull { g ->
+        byGroupId[g.id]?.takeIf { it.isNotEmpty() }?.let { assessmentGroupChipTitle(g) to it }
+    }.toMutableList()
+    val known = groups.map { it.id }.toSet()
+    val other = exams.filter { it.groupId !in known }
+    if (other.isNotEmpty()) {
+        ordered.add("Other assessments" to other)
+    }
+    return ordered
 }
 
 @Composable

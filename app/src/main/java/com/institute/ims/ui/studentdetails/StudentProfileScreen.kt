@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -60,7 +61,12 @@ fun StudentProfileScreen(
             onBack = onBack,
             modifier = modifier,
         )
-        else -> Box(modifier = modifier.fillMaxSize().background(Color(0xFFF5F3EE)))
+        else -> Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color(0xFFF5F3EE))
+                .systemBarsPadding(),
+        )
     }
 }
 
@@ -70,6 +76,7 @@ private fun StudentNotFoundBody(studentId: String, modifier: Modifier = Modifier
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFF5F3EE))
+            .systemBarsPadding()
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -94,7 +101,8 @@ private fun StudentProfileBody(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F3EE)),
+            .background(Color(0xFFF5F3EE))
+            .systemBarsPadding(),
         contentPadding = PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -142,7 +150,7 @@ private fun ProfileHeader(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(185.dp)
                 .background(Color(0xFF0F7A5A)),
         ) {
             Box(
@@ -226,21 +234,20 @@ private fun ProfileTabs() {
             .fillMaxWidth()
             .height(40.dp)
             .background(Color(0xFF0B6348)),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .weight(1f)
                 .fillMaxSize()
                 .background(Color.White.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Overview", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        }
-        Box(modifier = Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Results", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
-        }
-        Box(modifier = Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Attendance", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+            Text(
+                text = "Overview",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 }

@@ -12,6 +12,7 @@ sealed class DashboardNavAction {
     data object OpenStudentDirectory : DashboardNavAction()
     data object OpenExamList : DashboardNavAction()
     data class OpenNews(val query: String = "") : DashboardNavAction()
+    data class OpenNewsDetail(val newsId: String) : DashboardNavAction()
     data object OpenRegionalSettings : DashboardNavAction()
     data class OpenStudentProfile(val studentId: String) : DashboardNavAction()
     data class OpenExamDetail(val examId: String) : DashboardNavAction()

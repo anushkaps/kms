@@ -15,26 +15,36 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -58,14 +68,16 @@ fun StudentListScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
-    val batch2022 = state.batches.firstOrNull { it.code.contains("2022") }?.id
     val grouped = state.students.groupBy { it.batchId }
     val orderedBatches = state.batches.filter { grouped.containsKey(it.id) }
+    val hasAdvancedSelection =
+        state.courseLabelFilter != null || state.categoryFilter != null
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F3EE)),
+            .background(Color(0xFFF5F3EE))
+            .systemBarsPadding(),
     ) {
         StudentHeader(
             totalStudents = state.students.size,
@@ -77,28 +89,49 @@ fun StudentListScreen(
         )
 
         FilterStrip(
-            isAll = state.statusFilter == null && state.batchIdFilter == null,
+            batches = state.batches,
+            isAll = state.statusFilter == null && state.batchIdFilter == null && !hasAdvancedSelection,
             isCurrent = state.statusFilter == StudentStatus.CURRENT,
             isFormer = state.statusFilter == StudentStatus.FORMER,
-            isBatch2022 = state.batchIdFilter == batch2022 && batch2022 != null,
+            selectedBatchId = state.batchIdFilter,
             onAll = {
                 viewModel.onStatusFilterChange(null)
                 viewModel.onBatchFilterChange(null)
+                viewModel.onCourseFilterChange(null)
+                viewModel.onCategoryFilterChange(null)
             },
             onCurrent = {
                 viewModel.onBatchFilterChange(null)
+                viewModel.onCourseFilterChange(null)
+                viewModel.onCategoryFilterChange(null)
                 viewModel.onStatusFilterChange(if (state.statusFilter == StudentStatus.CURRENT) null else StudentStatus.CURRENT)
             },
             onFormer = {
                 viewModel.onBatchFilterChange(null)
+                viewModel.onCourseFilterChange(null)
+                viewModel.onCategoryFilterChange(null)
                 viewModel.onStatusFilterChange(if (state.statusFilter == StudentStatus.FORMER) null else StudentStatus.FORMER)
             },
-            onBatch2022 = {
+            onBatchSelected = { batchId ->
                 viewModel.onStatusFilterChange(null)
-                if (batch2022 != null) {
-                    viewModel.onBatchFilterChange(if (state.batchIdFilter == batch2022) null else batch2022)
-                }
+                viewModel.onCourseFilterChange(null)
+                viewModel.onCategoryFilterChange(null)
+                viewModel.onBatchFilterChange(
+                    if (state.batchIdFilter == batchId) null else batchId,
+                )
             },
+        )
+
+        AdvancedFiltersStrip(
+            expanded = state.advancedPanelExpanded,
+            courseLabels = state.courseLabels,
+            categories = state.categories,
+            selectedCourse = state.courseLabelFilter,
+            selectedCategory = state.categoryFilter,
+            onToggle = viewModel::onToggleAdvancedPanel,
+            onCourse = viewModel::onCourseFilterChange,
+            onCategory = viewModel::onCategoryFilterChange,
+            onClearAdvanced = viewModel::onClearAdvancedFilters,
         )
 
         LazyColumn(
@@ -138,89 +171,126 @@ private fun StudentHeader(
     onQueryChange: (String) -> Unit,
     onSearchDone: () -> Unit,
 ) {
+    val headerGreen = Color(0xFF0F7A5A)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .background(Color(0xFF0F7A5A)),
+            .background(headerGreen),
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp)
-                .background(Color(0xFF0F7A5A)),
-        )
-        Text(
-            text = "< Dashboard",
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 11.sp,
-            lineHeight = 13.sp,
-            modifier = Modifier
-                .padding(start = 24.dp, top = 52.dp)
-                .clickable(onClick = onBack),
-        )
-        Text(
-            text = "Students",
-            color = Color.White,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 26.sp,
-            lineHeight = 31.sp,
-            modifier = Modifier.padding(start = 24.dp, top = 72.dp),
-        )
-        Text(
-            text = "$totalStudents enrolled · $totalBatches batches",
-            color = Color.White.copy(alpha = 0.65f),
-            fontSize = 12.sp,
-            lineHeight = 15.sp,
-            modifier = Modifier.padding(start = 24.dp, top = 108.dp),
-        )
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier
-                .padding(start = 24.dp, top = 136.dp, end = 24.dp)
-                .fillMaxWidth()
-                .height(40.dp),
-            placeholder = {
-                Text(
-                    text = "Search by name, roll no...",
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.65f),
+                .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .clickable(onClick = onBack),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White.copy(alpha = 0.75f),
+                    modifier = Modifier.size(18.dp),
                 )
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(20.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color.White.copy(alpha = 0.12f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.12f),
-                focusedBorderColor = Color.White.copy(alpha = 0.2f),
-                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                cursorColor = Color.White,
-            ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { onSearchDone() }),
-        )
+                Text(
+                    text = "Dashboard",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp,
+                )
+            }
+            Text(
+                text = "Students",
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 26.sp,
+                lineHeight = 31.sp,
+            )
+            Text(
+                text = "$totalStudents enrolled · $totalBatches batches",
+                color = Color.White.copy(alpha = 0.65f),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+            )
+            // Capsule search: translucent fill + hairline border (no clipped OutlinedTextField chrome)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(percent = 50),
+                color = Color.White.copy(alpha = 0.14f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(Color.White.copy(alpha = 0.18f), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        modifier = Modifier.weight(1f),
+                        textStyle = MaterialTheme.typography.bodySmall.copy(
+                            color = Color.White,
+                            fontSize = 14.sp,
+                        ),
+                        singleLine = true,
+                        cursorBrush = SolidColor(Color.White),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { onSearchDone() }),
+                        decorationBox = { innerTextField ->
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                if (query.isEmpty()) {
+                                    Text(
+                                        text = "Search by name, roll no...",
+                                        fontSize = 14.sp,
+                                        color = Color.White.copy(alpha = 0.55f),
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        },
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun FilterStrip(
+    batches: List<Batch>,
     isAll: Boolean,
     isCurrent: Boolean,
     isFormer: Boolean,
-    isBatch2022: Boolean,
+    selectedBatchId: String?,
     onAll: () -> Unit,
     onCurrent: () -> Unit,
     onFormer: () -> Unit,
-    onBatch2022: () -> Unit,
+    onBatchSelected: (String) -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
             .border(1.dp, Color(0xFFD4CFC5))
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -228,14 +298,144 @@ private fun FilterStrip(
         ListChip("All", 44.dp, isAll, onAll)
         ListChip("Current", 76.dp, isCurrent, onCurrent)
         ListChip("Former", 68.dp, isFormer, onFormer)
-        ListChip("Batch 2022", 100.dp, isBatch2022, onBatch2022)
+        batches.forEach { batch ->
+            val label = batchFilterChipLabel(batch)
+            val selected = selectedBatchId == batch.id
+            ListChip(
+                label = label,
+                width = (label.length * 9 + 28).coerceIn(52, 160).dp,
+                selected = selected,
+                onClick = { onBatchSelected(batch.id) },
+            )
+        }
+    }
+}
+
+private fun batchFilterChipLabel(batch: Batch): String {
+    val years = Regex("(20\\d{2})").findAll(batch.name).map { it.value }.toList()
+    return when (years.size) {
+        2 -> "${years[0]}–${years[1]}"
+        1 -> years[0]
+        else -> batch.code.uppercase()
+    }
+}
+
+@Composable
+private fun AdvancedFiltersStrip(
+    expanded: Boolean,
+    courseLabels: List<String>,
+    categories: List<String>,
+    selectedCourse: String?,
+    selectedCategory: String?,
+    onToggle: () -> Unit,
+    onCourse: (String?) -> Unit,
+    onCategory: (String?) -> Unit,
+    onClearAdvanced: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color(0xFFD4CFC5))
+            .padding(horizontal = 24.dp, vertical = 6.dp),
+    ) {
+        TextButton(onClick = onToggle, modifier = Modifier.padding(vertical = 0.dp)) {
+            Text(
+                text = if (expanded) "Hide advanced filters" else "Advanced filters (course · category)",
+                fontSize = 11.sp,
+                color = Color(0xFF0F7A5A),
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column {
+                Text(
+                    text = "Course",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF6E6A62),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    courseLabels.forEach { label ->
+                        val selected = selectedCourse == label
+                        AdvancedPill(
+                            text = label,
+                            selected = selected,
+                            onClick = {
+                                onCourse(if (selected) null else label)
+                            },
+                        )
+                    }
+                }
+                Text(
+                    text = "Category",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF6E6A62),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    categories.forEach { label ->
+                        val selected = selectedCategory == label
+                        AdvancedPill(
+                            text = label,
+                            selected = selected,
+                            onClick = {
+                                onCategory(if (selected) null else label)
+                            },
+                        )
+                    }
+                }
+                TextButton(onClick = onClearAdvanced) {
+                    Text("Clear course & category", fontSize = 11.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdvancedPill(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) Color(0xFF0F7A5A) else Color.White,
+        border = BorderStroke(
+            1.dp,
+            if (selected) Color(0xFF0F7A5A) else Color(0xFFD4CFC5),
+        ),
+    ) {
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (selected) Color.White else Color(0xFF6E6A62),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
 @Composable
 private fun ListChip(
     label: String,
-    width: androidx.compose.ui.unit.Dp,
+    width: Dp,
     selected: Boolean,
     onClick: () -> Unit,
 ) {

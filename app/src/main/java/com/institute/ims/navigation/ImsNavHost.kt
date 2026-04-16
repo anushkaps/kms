@@ -38,7 +38,7 @@ fun ImsNavHost(
     ) {
         composable(NavRoutes.Splash) {
             SplashScreen(
-                onFinished = {
+                onContinueToRoleSelect = {
                     navController.navigate(NavRoutes.RoleSelect) {
                         popUpTo(NavRoutes.Splash) { inclusive = true }
                     }
@@ -79,6 +79,12 @@ fun ImsNavHost(
                 DashboardScreen(
                     userId = user.id,
                     onSignOut = {
+                        navController.navigate(NavRoutes.RoleSelect) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onSwitchRole = {
                         navController.navigate(NavRoutes.RoleSelect) {
                             popUpTo(navController.graph.id) { inclusive = true }
                             launchSingleTop = true

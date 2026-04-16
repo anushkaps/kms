@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.institute.ims.ui.dashboard
 
 import androidx.activity.compose.BackHandler
@@ -5,6 +7,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,23 +17,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Schedule
@@ -40,22 +50,21 @@ import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -63,8 +72,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -74,19 +85,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.DashboardCapabilityHighlight
 import com.institute.ims.data.model.DashboardStat
+import com.institute.ims.data.model.DemoNotification
 import com.institute.ims.data.model.NewsItem
 import com.institute.ims.data.model.UserRole
+import com.institute.ims.data.repository.FakeNotificationRepository
 import com.institute.ims.ui.common.LedgerPalette
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     userId: String,
     onSignOut: () -> Unit,
+    onSwitchRole: () -> Unit,
     onOpenStudents: () -> Unit,
     onOpenExams: () -> Unit,
     onOpenNews: (query: String) -> Unit,
@@ -102,11 +115,15 @@ fun DashboardScreen(
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
-    val recentSuggestions = remember { mutableStateListOf<DashboardNavSuggestion>() }
-    var searchPaletteVisible by rememberSaveable { mutableStateOf(false) }
+    var searchFieldFocused by remember { mutableStateOf(false) }
+    var forceSearchResultsVisible by rememberSaveable { mutableStateOf(false) }
+    var showAccountSheet by remember { mutableStateOf(false) }
+    var showNotificationsSheet by remember { mutableStateOf(false) }
+    var selectedNewsDetail by remember { mutableStateOf<NewsItem?>(null) }
+    var statExplainer by remember { mutableStateOf<DashboardStat?>(null) }
 
-    val navSuggestions = remember(uiState.searchQuery, uiState.news) {
-        viewModel.navigationSuggestions()
+    val groupedSuggestions = remember(uiState.searchQuery, uiState.news) {
+        viewModel.navigationSuggestionsGrouped()
     }
 
     val displayedNews = remember(uiState.news, uiState.newsSpotlightId) {
@@ -116,12 +133,23 @@ fun DashboardScreen(
             else -> uiState.news
         }
     }
-    BackHandler(enabled = searchPaletteVisible) {
-        searchPaletteVisible = false
+
+    val searchResultsVisible =
+        uiState.searchQuery.isNotBlank() &&
+            (searchFieldFocused || forceSearchResultsVisible)
+
+    fun dismissSearchOverlay() {
+        forceSearchResultsVisible = false
+        focusManager.clearFocus()
+    }
+
+    BackHandler(enabled = searchResultsVisible) {
+        dismissSearchOverlay()
+        viewModel.onSearchQueryChange("")
     }
 
     fun applySuggestion(s: DashboardNavSuggestion) {
-        focusManager.clearFocus()
+        dismissSearchOverlay()
         when (val a = s.action) {
             DashboardNavAction.OpenStudentDirectory -> {
                 viewModel.onSearchQueryChange("")
@@ -143,6 +171,15 @@ fun DashboardScreen(
                 viewModel.onSearchQueryChange("")
                 onOpenNews(a.query)
             }
+            is DashboardNavAction.OpenNewsDetail -> {
+                viewModel.onSearchQueryChange("")
+                val hit = uiState.news.find { it.id == a.newsId }
+                if (hit != null) {
+                    selectedNewsDetail = hit
+                } else {
+                    onOpenNews("")
+                }
+            }
             DashboardNavAction.OpenRegionalSettings -> {
                 viewModel.onSearchQueryChange("")
                 onOpenRegionalSettings()
@@ -150,288 +187,576 @@ fun DashboardScreen(
         }
     }
 
-    fun applySuggestionFromPalette(suggestion: DashboardNavSuggestion) {
-        recentSuggestions.removeAll { it.id == suggestion.id }
-        recentSuggestions.add(0, suggestion)
-        if (recentSuggestions.size > 4) {
-            recentSuggestions.subList(4, recentSuggestions.size).clear()
+    fun onStatCardClick(stat: DashboardStat) {
+        focusManager.clearFocus()
+        when (stat.id) {
+            "students" -> onOpenStudents()
+            "exams", "upcoming_exams" -> onOpenExams()
+            "reports", "grading_queue", "pending_approval" -> {
+                showNotificationsSheet = true
+            }
+            "batches" -> {
+                statExplainer = stat
+            }
+            else -> statExplainer = stat
         }
-        searchPaletteVisible = false
-        applySuggestion(suggestion)
+    }
+
+    val accountSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val notificationsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val newsDetailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val statSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(uiState.searchQuery) {
+        if (uiState.searchQuery.isBlank()) {
+            forceSearchResultsVisible = false
+        }
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 24.dp,
-                end = 24.dp,
-                top = 0.dp,
-                bottom = 28.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                ) {
-                    DashboardHeader(
-                        displayName = uiState.displayName,
-                        role = uiState.role,
-                        initials = uiState.userInitials,
-                        greetingLine = uiState.greetingLine,
-                        instituteSubtitle = uiState.instituteSubtitle,
-                        onSignOut = onSignOut,
-                    )
-                    DashboardSearchBar(
-                        query = uiState.searchQuery,
-                        onClick = { searchPaletteVisible = true },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth(),
-                    )
-                }
-            }
-
-            item {
-                TodayRow(uiState.overviewLine)
-            }
-
-            item {
-                Text(
-                    text = "OVERVIEW",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF6E6A62),
-                    fontWeight = FontWeight.SemiBold,
-                )
-                val topStats = uiState.stats.take(4)
-                val rowA = topStats.take(2)
-                val rowB = topStats.drop(2).take(2)
-                if (rowA.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        rowA.forEachIndexed { index, stat ->
-                            DashboardStatMiniCard(
-                                stat = stat,
-                                iconColor = statDotColor(index),
-                                modifier = Modifier.weight(1f),
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 24.dp,
+                    end = 24.dp,
+                    top = 0.dp,
+                    bottom = 28.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                        ) {
+                            DashboardHeader(
+                                displayName = uiState.displayName,
+                                role = uiState.role,
+                                initials = uiState.userInitials,
+                                timeOfDayGreeting = uiState.timeOfDayGreeting,
+                                roleContextLine = uiState.roleContextLine,
+                                instituteSubtitle = uiState.instituteSubtitle,
+                                hasUnreadNotifications = uiState.hasUnreadNotifications,
+                                onProfileClick = { showAccountSheet = true },
+                                onNotificationsClick = { showNotificationsSheet = true },
+                                onSignOut = onSignOut,
                             )
-                        }
-                        if (rowA.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth(),
+                            ) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(22.dp),
+                                    color = Color.White,
+                                    border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Search,
+                                            contentDescription = null,
+                                            tint = Color(0xFF888780),
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                        BasicTextField(
+                                            value = uiState.searchQuery,
+                                            onValueChange = viewModel::onSearchQueryChange,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .onFocusChanged { searchFieldFocused = it.isFocused },
+                                            textStyle = MaterialTheme.typography.bodySmall.copy(color = LedgerPalette.Ink),
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                            keyboardActions = KeyboardActions(
+                                                onSearch = {
+                                                    forceSearchResultsVisible = true
+                                                    focusManager.clearFocus()
+                                                },
+                                            ),
+                                            cursorBrush = SolidColor(LedgerPalette.Cobalt),
+                                            decorationBox = { innerTextField ->
+                                                Box(modifier = Modifier.fillMaxWidth()) {
+                                                    if (uiState.searchQuery.isEmpty()) {
+                                                        Text(
+                                                            text = "Search students, exams, news...",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = Color(0xFF888780),
+                                                        )
+                                                    }
+                                                    innerTextField()
+                                                }
+                                            },
+                                        )
+                                        if (uiState.searchQuery.isNotEmpty()) {
+                                            TextButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                                Text("Clear")
+                                            }
+                                        }
+                                    }
+                                }
+                                AnimatedVisibility(visible = searchResultsVisible && groupedSuggestions.isNotEmpty()) {
+                                    InlineSearchResultsCard(
+                                        groups = groupedSuggestions,
+                                        onPick = { applySuggestion(it) },
+                                        modifier = Modifier.padding(top = 8.dp),
+                                    )
+                                }
+                                AnimatedVisibility(
+                                    visible = searchResultsVisible &&
+                                        uiState.searchQuery.isNotBlank() &&
+                                        groupedSuggestions.isEmpty(),
+                                ) {
+                                    Text(
+                                        text = "No matches yet. Try a student name, ID, exam title, or “Students” / “Exams”.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 8.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-                if (rowB.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        rowB.forEachIndexed { index, stat ->
-                            DashboardStatMiniCard(
-                                stat = stat,
-                                iconColor = statDotColor(index + 2),
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        if (rowB.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
+
+                item {
+                    TodayRow(
+                        overviewLine = uiState.overviewLine,
+                        onClick = {
+                            dismissSearchOverlay()
+                            viewModel.refreshHubSummary()
+                        },
+                    )
                 }
-            }
 
-            item {
-                Text(
-                    text = "MODULES",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF6E6A62),
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    val studentsModule = uiState.modules.firstOrNull { it.id.name == "STUDENTS" }
-                    val examsModule = uiState.modules.firstOrNull { it.id.name == "EXAMS" }
-                    studentsModule?.let { card ->
-                        ModuleTileCard(
-                            title = card.title,
-                            subtitle = card.description,
-                            accent = LedgerPalette.Cobalt,
-                            onClick = {
-                                focusManager.clearFocus()
-                                viewModel.onModuleClick(
-                                    id = card.id,
-                                    onOpenStudents = onOpenStudents,
-                                    onOpenExams = onOpenExams,
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    examsModule?.let { card ->
-                        ModuleTileCard(
-                            title = card.title,
-                            subtitle = card.description,
-                            accent = LedgerPalette.Plum,
-                            onClick = {
-                                focusManager.clearFocus()
-                                viewModel.onModuleClick(
-                                    id = card.id,
-                                    onOpenStudents = onOpenStudents,
-                                    onOpenExams = onOpenExams,
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                item {
                     Text(
-                        text = "LATEST NEWS",
+                        text = "OVERVIEW",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFF6E6A62),
                         fontWeight = FontWeight.SemiBold,
                     )
-                    Text(
-                        text = "All ->",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = LedgerPalette.Cobalt,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.clickable { onOpenNews("") },
-                    )
-                }
-            }
-
-            item { DashboardNewsCard(displayedNews.take(2)) }
-        }
-        AnimatedVisibility(visible = searchPaletteVisible) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                ) {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = viewModel::onSearchQueryChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Search students, exams, news") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Search,
-                                contentDescription = null,
-                            )
-                        },
-                        trailingIcon = {
-                            TextButton(onClick = { searchPaletteVisible = false }) {
-                                Text("Done")
-                            }
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.extraLarge,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                    )
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        if (recentSuggestions.isNotEmpty()) {
-                            item { SectionTitle("Recent") }
-                            item {
-                                HubSearchSuggestionsCard(
-                                    suggestions = recentSuggestions,
-                                    onPick = ::applySuggestionFromPalette,
+                    val topStats = uiState.stats.take(4)
+                    val rowA = topStats.take(2)
+                    val rowB = topStats.drop(2).take(2)
+                    if (rowA.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            rowA.forEachIndexed { index, stat ->
+                                DashboardStatMiniCard(
+                                    stat = stat,
+                                    iconColor = statDotColor(index),
+                                    onClick = { onStatCardClick(stat) },
+                                    modifier = Modifier.weight(1f),
                                 )
+                            }
+                            if (rowA.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
-                        item { SectionTitle("Jump to") }
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                SuggestionChip(
-                                    onClick = {
-                                        searchPaletteVisible = false
-                                        viewModel.onSearchQueryChange("")
-                                        onOpenStudents()
-                                    },
-                                    label = { Text("Students") },
-                                )
-                                SuggestionChip(
-                                    onClick = {
-                                        searchPaletteVisible = false
-                                        viewModel.onSearchQueryChange("")
-                                        onOpenExams()
-                                    },
-                                    label = { Text("Exams") },
-                                )
-                                SuggestionChip(
-                                    onClick = {
-                                        searchPaletteVisible = false
-                                        onOpenNews("")
-                                    },
-                                    label = { Text("News") },
+                    }
+                    if (rowB.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            rowB.forEachIndexed { index, stat ->
+                                DashboardStatMiniCard(
+                                    stat = stat,
+                                    iconColor = statDotColor(index + 2),
+                                    onClick = { onStatCardClick(stat) },
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
-                        }
-                        if (uiState.searchQuery.isNotBlank()) {
-                            item { SectionTitle("Results") }
-                            if (navSuggestions.isEmpty()) {
-                                item {
-                                    Text(
-                                        text = "No matches yet. Try student name, ID, exam title, or module keywords.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            } else {
-                                item {
-                                    HubSearchSuggestionsCard(
-                                        suggestions = navSuggestions,
-                                        onPick = ::applySuggestionFromPalette,
-                                    )
-                                }
+                            if (rowB.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }
                 }
+
+                item {
+                    Text(
+                        text = "MODULES",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF6E6A62),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        val studentsModule = uiState.modules.firstOrNull { it.id.name == "STUDENTS" }
+                        val examsModule = uiState.modules.firstOrNull { it.id.name == "EXAMS" }
+                        studentsModule?.let { card ->
+                            ModuleTileCard(
+                                title = card.title,
+                                subtitle = card.description,
+                                accent = LedgerPalette.Cobalt,
+                                onClick = {
+                                    dismissSearchOverlay()
+                                    viewModel.onModuleClick(
+                                        id = card.id,
+                                        onOpenStudents = onOpenStudents,
+                                        onOpenExams = onOpenExams,
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        examsModule?.let { card ->
+                            ModuleTileCard(
+                                title = card.title,
+                                subtitle = card.description,
+                                accent = LedgerPalette.Plum,
+                                onClick = {
+                                    dismissSearchOverlay()
+                                    viewModel.onModuleClick(
+                                        id = card.id,
+                                        onOpenStudents = onOpenStudents,
+                                        onOpenExams = onOpenExams,
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "LATEST NEWS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF6E6A62),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = "All ->",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LedgerPalette.Cobalt,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.clickable {
+                                dismissSearchOverlay()
+                                onOpenNews("")
+                            },
+                        )
+                    }
+                }
+
+                item {
+                    DashboardNewsCard(
+                        newsItems = displayedNews.take(2),
+                        onNewsClick = { item ->
+                            dismissSearchOverlay()
+                            selectedNewsDetail = item
+                        },
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = searchResultsVisible,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 198.dp),
+            ) {
+                val scrimInteraction = remember { MutableInteractionSource() }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = scrimInteraction,
+                            indication = null,
+                        ) {
+                            dismissSearchOverlay()
+                        },
+                )
             }
         }
+    }
+
+    if (showAccountSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showAccountSheet = false },
+            sheetState = accountSheetState,
+        ) {
+            AccountSheetContent(
+                displayName = uiState.displayName,
+                role = uiState.role,
+                onSwitchRole = {
+                    showAccountSheet = false
+                    onSwitchRole()
+                },
+                onSignOut = {
+                    showAccountSheet = false
+                    onSignOut()
+                },
+                onClose = { showAccountSheet = false },
+            )
+        }
+    } else if (showNotificationsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showNotificationsSheet = false },
+            sheetState = notificationsSheetState,
+        ) {
+            NotificationsSheetContent(
+                items = FakeNotificationRepository.notifications(),
+                onItemClick = { FakeNotificationRepository.markRead(it.id) },
+                onMarkAllRead = {
+                    FakeNotificationRepository.markAllRead()
+                    showNotificationsSheet = false
+                },
+                onClose = { showNotificationsSheet = false },
+            )
+        }
+    } else if (selectedNewsDetail != null) {
+        val news = selectedNewsDetail!!
+        ModalBottomSheet(
+            onDismissRequest = { selectedNewsDetail = null },
+            sheetState = newsDetailSheetState,
+        ) {
+            NewsDetailSheetContent(
+                news = news,
+                onClose = { selectedNewsDetail = null },
+            )
+        }
+    } else if (statExplainer != null) {
+        val stat = statExplainer!!
+        ModalBottomSheet(
+            onDismissRequest = { statExplainer = null },
+            sheetState = statSheetState,
+        ) {
+            StatExplainerSheetContent(
+                stat = stat,
+                onClose = { statExplainer = null },
+            )
+        }
+    }
+}
+
+@Composable
+private fun InlineSearchResultsCard(
+    groups: List<Pair<String, List<DashboardNavSuggestion>>>,
+    onPick: (DashboardNavSuggestion) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+    ) {
+        Column(
+            modifier = Modifier
+                .heightIn(max = 240.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+        ) {
+            groups.forEach { (label, suggestions) ->
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF6E6A62),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+                HubSearchSuggestionsCard(
+                    suggestions = suggestions,
+                    onPick = onPick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountSheetContent(
+    displayName: String,
+    role: UserRole?,
+    onSwitchRole: () -> Unit,
+    onSignOut: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+    ) {
+        Text("Account", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = displayName,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = role?.let(::roleLabel) ?: "Signed in",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        TextButton(onClick = onSwitchRole, modifier = Modifier.fillMaxWidth()) {
+            Text("Switch demo role")
+        }
+        TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+            Text("Sign out")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        TextButton(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+            Text("Close")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun NotificationsSheetContent(
+    items: List<DemoNotification>,
+    onItemClick: (DemoNotification) -> Unit,
+    onMarkAllRead: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+    ) {
+        Text("Notifications", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.height(12.dp))
+        items.forEach { item ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onItemClick(item) }
+                    .padding(vertical = 10.dp),
+            ) {
+                Text(item.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(
+                    item.subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    item.body,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                HorizontalDivider(modifier = Modifier.padding(top = 10.dp))
+            }
+        }
+        TextButton(onClick = onMarkAllRead, modifier = Modifier.fillMaxWidth()) {
+            Text("Mark all as read")
+        }
+        TextButton(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+            Text("Close")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun NewsDetailSheetContent(
+    news: NewsItem,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+    ) {
+        news.tag?.let { tag ->
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = Color(0xFFEEF2FB),
+            ) {
+                Text(
+                    text = tag,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = LedgerPalette.Cobalt,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        Text(
+            text = formatNewsDate(news.publishedAtEpochMs),
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF6E6A62),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(news.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(news.body, style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(16.dp))
+        TextButton(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+            Text("Close")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun StatExplainerSheetContent(
+    stat: DashboardStat,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+    ) {
+        Text(stat.value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        Text(stat.label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        stat.caption?.let {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "This value is computed from the local seed data used across the demo (students, exams, batches).",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        TextButton(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+            Text("Close")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -601,60 +926,14 @@ private fun HubSearchSuggestionsCard(
 }
 
 @Composable
-private fun DashboardSearchBar(
-    query: String,
+private fun TodayRow(
+    overviewLine: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
-        color = Color.White,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp)
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFD4CFC5)),
-            )
-            Text(
-                text = query.ifBlank { "Search students, exams, news..." },
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF888780),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 8.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = Color(0xFFF5F3EE),
-                border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
-            ) {
-                Text(
-                    text = "SK",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF888780),
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TodayRow(overviewLine: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -687,9 +966,8 @@ private fun ModuleTileCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier
-            .height(100.dp)
-            .clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = modifier.height(100.dp),
         colors = CardDefaults.cardColors(containerColor = accent),
         shape = RoundedCornerShape(12.dp),
     ) {
@@ -757,7 +1035,10 @@ private fun ModuleTileCard(
 }
 
 @Composable
-private fun DashboardNewsCard(newsItems: List<NewsItem>) {
+private fun DashboardNewsCard(
+    newsItems: List<NewsItem>,
+    onNewsClick: (NewsItem) -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -773,21 +1054,26 @@ private fun DashboardNewsCard(newsItems: List<NewsItem>) {
         ) {
             val first = newsItems.getOrNull(0)
             if (first != null) {
-                NewsRowLine(first)
+                NewsRowLine(item = first, onClick = { onNewsClick(first) })
             }
             HorizontalDivider(color = Color(0xFFEEECE5))
             val second = newsItems.getOrNull(1)
             if (second != null) {
-                NewsRowLine(second)
+                NewsRowLine(item = second, onClick = { onNewsClick(second) })
             }
         }
     }
 }
 
 @Composable
-private fun NewsRowLine(item: NewsItem) {
+private fun NewsRowLine(
+    item: NewsItem,
+    onClick: () -> Unit,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Top,
     ) {
@@ -827,8 +1113,12 @@ private fun DashboardHeader(
     displayName: String,
     role: UserRole?,
     initials: String,
-    greetingLine: String,
+    timeOfDayGreeting: String,
+    roleContextLine: String,
     instituteSubtitle: String,
+    hasUnreadNotifications: Boolean,
+    onProfileClick: () -> Unit,
+    onNotificationsClick: () -> Unit,
     onSignOut: () -> Unit,
 ) {
     Box(
@@ -846,81 +1136,111 @@ private fun DashboardHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 0.dp, end = 0.dp, top = 56.dp)
-                .padding(horizontal = 0.dp),
+                .padding(start = 24.dp, top = 56.dp)
+                .clickable(onClick = onProfileClick),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .padding(start = 0.dp),
-            )
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(LedgerPalette.Cobalt),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = initials,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+            Column(modifier = Modifier.padding(start = 8.dp)) {
+                Text(
+                    text = role?.let(::roleLabel) ?: instituteSubtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF6E6A62),
+                )
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFF5F3EE),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        Box(
+        Row(
             modifier = Modifier
-                .padding(start = 0.dp),
-        )
-        Box(
-            modifier = Modifier
-                .padding(start = 24.dp, top = 56.dp)
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(LedgerPalette.Cobalt),
-            contentAlignment = Alignment.Center,
+                .align(Alignment.TopEnd)
+                .padding(end = 24.dp, top = 58.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF2C2B27))
+                        .clickable(onClick = onNotificationsClick),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Notifications,
+                        contentDescription = "Notifications",
+                        tint = Color(0xFFD4CFC5),
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                if (hasUnreadNotifications) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 3.dp, y = (-2).dp)
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFC0352B)),
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF2C2B27))
+                    .clickable(onClick = onSignOut),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Logout,
+                    contentDescription = "Sign out",
+                    tint = Color(0xFFD4CFC5),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.padding(start = 24.dp, top = 102.dp, end = 24.dp),
         ) {
             Text(
-                text = initials,
-                color = Color.White,
+                text = timeOfDayGreeting.ifBlank { "Good morning." },
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color(0xFFF5F3EE),
                 fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            if (roleContextLine.isNotBlank()) {
+                Text(
+                    text = roleContextLine,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFD4CFC5),
+                    modifier = Modifier.padding(top = 4.dp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        Text(
-            text = role?.let(::roleLabel) ?: instituteSubtitle,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF6E6A62),
-            modifier = Modifier.padding(start = 68.dp, top = 58.dp),
-        )
-        Text(
-            text = displayName,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFFF5F3EE),
-            modifier = Modifier.padding(start = 68.dp, top = 72.dp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 24.dp, top = 58.dp)
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF2C2B27))
-                .clickable(onClick = onSignOut),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Lock,
-                contentDescription = "Sign out",
-                tint = Color(0xFFD4CFC5),
-                modifier = Modifier.size(16.dp),
-            )
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 20.dp, top = 56.dp)
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFC0352B)),
-        )
-        Text(
-            text = greetingLine.ifBlank { "Good morning." },
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFFF5F3EE),
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 24.dp, top = 106.dp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
@@ -939,10 +1259,11 @@ private fun SectionTitle(text: String) {
 private fun DashboardStatMiniCard(
     stat: DashboardStat,
     iconColor: Color,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White,

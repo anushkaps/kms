@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,25 +20,25 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamAnalytics
 import com.institute.ims.data.model.ExamResult
@@ -65,9 +64,7 @@ fun ReportScreen(
         topBar = {
             ReportHeader(
                 exam = state.exam,
-                selectedTab = state.selectedTab,
                 onBack = onBack,
-                onTabChange = viewModel::onReportTabChange,
             )
         },
     ) { innerPadding ->
@@ -90,15 +87,12 @@ fun ReportScreen(
 @Composable
 private fun ReportHeader(
     exam: Exam?,
-    selectedTab: ReportCenterTab,
     onBack: () -> Unit,
-    onTabChange: (ReportCenterTab) -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(LedgerPalette.Amber)
-            .statusBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -128,41 +122,22 @@ private fun ReportHeader(
                 )
             }
         }
-        // Kept for compatibility: selectedTab exists, but these chips are rendered as evaluation labels.
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val eval = exam?.evaluationType?.name
-            HeaderMethodChip(
-                text = "${eval ?: "GPA"} method",
-                selected = true,
-                onClick = { onTabChange(selectedTab) },
-            )
-            HeaderMethodChip(
-                text = "CCE",
-                selected = eval == "CCE",
-                onClick = { onTabChange(selectedTab) },
-            )
-            HeaderMethodChip(
-                text = "CWA",
-                selected = eval == "CWA",
-                onClick = { onTabChange(selectedTab) },
-            )
+        exam?.let { e ->
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color.White.copy(alpha = 0.16f),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = "Evaluation method: ${e.evaluationType.name}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                )
+            }
         }
     }
-}
-
-@Composable
-private fun HeaderMethodChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(text) },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = Color.White.copy(alpha = 0.22f),
-            selectedLabelColor = Color.White,
-            containerColor = Color.White.copy(alpha = 0.12f),
-            labelColor = Color.White.copy(alpha = 0.92f),
-        ),
-    )
 }
 
 @Composable
@@ -209,39 +184,105 @@ private fun ReportBody(
                 }
             }
         } else {
-            item { TightStatsGrid(analytics = analytics) }
-            item { GradeDistributionCard(analytics = analytics) }
-            item { TopResultsCard(results = topResults) }
+            if (exam.assessmentMode == AssessmentMode.CUSTOM) {
+                item { CustomExamSummaryCard(exam = exam) }
+            }
+            item { TightStatsGrid(analytics = analytics, exam = exam) }
+            item { GradeDistributionCard(analytics = analytics, exam = exam) }
+            item { TopResultsCard(results = topResults, exam = exam) }
             item { ExportButton() }
         }
     }
 }
 
 @Composable
-private fun TightStatsGrid(analytics: ExamAnalytics) {
+private fun CustomExamSummaryCard(exam: Exam) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "CUSTOM SCHEME",
+                style = MaterialTheme.typography.labelLarge,
+                color = LedgerPalette.Amber,
+            )
+            Text(
+                text = exam.customSchemeName ?: "—",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = exam.customCriteriaSummary ?: "—",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TightStatsGrid(analytics: ExamAnalytics, exam: Exam) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             StatMiniCard("Appeared", analytics.totalStudents.toString(), Modifier.weight(1f))
             StatMiniCard(
-                "Pass rate",
+                when (exam.assessmentMode) {
+                    AssessmentMode.MARKS -> "Pass rate"
+                    AssessmentMode.GRADE_BASED -> "Pass rate"
+                    AssessmentMode.CUSTOM -> "At/above bar"
+                },
                 analytics.passPercentage?.let { ExamAnalyticsCalculator.formatPercent(it) } ?: "-",
                 Modifier.weight(1f),
                 accent = LedgerPalette.Forest,
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            StatMiniCard(
-                "Average",
-                ExamAnalyticsCalculator.formatOneDecimal(analytics.averageMarks),
-                Modifier.weight(1f),
-                suffix = "Average score",
-            )
-            StatMiniCard(
-                "Highest",
-                ExamAnalyticsCalculator.formatOneDecimal(analytics.highestMarks),
-                Modifier.weight(1f),
-                suffix = "Lowest: ${ExamAnalyticsCalculator.formatOneDecimal(analytics.lowestMarks)}",
-            )
+            when (exam.assessmentMode) {
+                AssessmentMode.MARKS -> {
+                    StatMiniCard(
+                        "Average",
+                        ExamAnalyticsCalculator.formatOneDecimal(analytics.averageMarks),
+                        Modifier.weight(1f),
+                        suffix = "Average score",
+                    )
+                    StatMiniCard(
+                        "Highest",
+                        ExamAnalyticsCalculator.formatOneDecimal(analytics.highestMarks),
+                        Modifier.weight(1f),
+                        suffix = "Lowest: ${ExamAnalyticsCalculator.formatOneDecimal(analytics.lowestMarks)}",
+                    )
+                }
+                AssessmentMode.GRADE_BASED -> {
+                    StatMiniCard(
+                        "Mean scale",
+                        ExamAnalyticsCalculator.formatOneDecimal(analytics.averageMarks),
+                        Modifier.weight(1f),
+                        suffix = "Mapped grades",
+                    )
+                    StatMiniCard(
+                        "Top scale",
+                        ExamAnalyticsCalculator.formatOneDecimal(analytics.highestMarks),
+                        Modifier.weight(1f),
+                        suffix = "Bottom: ${ExamAnalyticsCalculator.formatOneDecimal(analytics.lowestMarks)}",
+                    )
+                }
+                AssessmentMode.CUSTOM -> {
+                    StatMiniCard(
+                        "Mean rubric",
+                        ExamAnalyticsCalculator.formatOneDecimal(analytics.averageMarks),
+                        Modifier.weight(1f),
+                        suffix = "Points on cap",
+                    )
+                    StatMiniCard(
+                        "Range",
+                        "${ExamAnalyticsCalculator.formatOneDecimal(analytics.lowestMarks)}–${ExamAnalyticsCalculator.formatOneDecimal(analytics.highestMarks)}",
+                        Modifier.weight(1f),
+                        suffix = "Low–high",
+                    )
+                }
+            }
         }
     }
 }
@@ -270,10 +311,22 @@ private fun StatMiniCard(
 }
 
 @Composable
-private fun GradeDistributionCard(analytics: ExamAnalytics) {
-    val gradeLabels = listOf("O", "A+", "A", "B+", "F")
-    val countsByLabel = analytics.gradeBreakdown.toMap()
-    val bars = gradeLabels.map { label -> label to (countsByLabel[label] ?: 0) }
+private fun GradeDistributionCard(analytics: ExamAnalytics, exam: Exam) {
+    val (title, bars) = when (exam.assessmentMode) {
+        AssessmentMode.MARKS -> {
+            val bs = analytics.buckets.map { it.label to it.count }
+            "Score bands · % of max" to if (bs.isNotEmpty()) bs else ExamAnalyticsCalculator.emptyDistributionPreview().map { it.label to it.count }
+        }
+        AssessmentMode.GRADE_BASED -> {
+            val g = analytics.gradeBreakdown.take(6)
+            "Grade distribution · ${exam.evaluationType.name}" to if (g.isNotEmpty()) g else listOf("—" to 0)
+        }
+        AssessmentMode.CUSTOM -> {
+            val bs = analytics.buckets.map { it.label to it.count }
+            val fallback = analytics.gradeBreakdown.take(6)
+            "Rubric spread · % of cap" to if (bs.isNotEmpty()) bs else if (fallback.isNotEmpty()) fallback else listOf("—" to 0)
+        }
+    }
     val maxCount = bars.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -282,7 +335,7 @@ private fun GradeDistributionCard(analytics: ExamAnalytics) {
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = "GRADE DISTRIBUTION - GPA",
+                text = title.uppercase(),
                 style = MaterialTheme.typography.labelLarge,
                 color = LedgerPalette.Amber,
             )
@@ -335,6 +388,9 @@ private fun GradeDistributionCard(analytics: ExamAnalytics) {
                             text = label,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
@@ -344,7 +400,7 @@ private fun GradeDistributionCard(analytics: ExamAnalytics) {
 }
 
 @Composable
-private fun TopResultsCard(results: List<ExamResult>) {
+private fun TopResultsCard(results: List<ExamResult>, exam: Exam) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -352,7 +408,11 @@ private fun TopResultsCard(results: List<ExamResult>) {
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = "TOP RESULTS",
+                text = when (exam.assessmentMode) {
+                    AssessmentMode.MARKS -> "TOP RESULTS"
+                    AssessmentMode.GRADE_BASED -> "TOP RESULTS · GRADES"
+                    AssessmentMode.CUSTOM -> "TOP RESULTS · RUBRIC"
+                },
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

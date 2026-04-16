@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -48,13 +47,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.EvaluationType
-import com.institute.ims.data.model.ExamStatus
-import com.institute.ims.data.model.uiLabel
+import com.institute.ims.data.model.shortFormatLabel
 import com.institute.ims.ui.common.LedgerPalette
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -213,7 +212,7 @@ fun CreateExamScreen(
                             value = groupName,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Group / series") },
+                            label = { Text("Assessment group") },
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupMenu)
                             },
@@ -247,27 +246,59 @@ fun CreateExamScreen(
                 ) {
                     CompactChipRow(
                         label = "Format",
-                        items = AssessmentMode.entries.map { it.name to it.uiLabel() },
+                        items = AssessmentMode.entries.map { it.name to it.shortFormatLabel() },
                         selectedId = state.assessmentMode.name,
                         onSelected = { id ->
                             AssessmentMode.entries.firstOrNull { it.name == id }?.let(viewModel::onAssessmentModeChange)
                         },
                     )
 
-                    CompactRowField(
-                        label = "Total marks",
-                        value = state.maxMarksInput,
-                        onValueChange = viewModel::onMaxMarksChange,
-                        placeholder = "100",
-                        keyboardType = KeyboardType.Decimal,
-                    )
-                    CompactRowField(
-                        label = "Pass threshold",
-                        value = state.passThresholdInput,
-                        onValueChange = viewModel::onPassThresholdChange,
-                        placeholder = "40 marks",
-                        keyboardType = KeyboardType.Decimal,
-                    )
+                    when (state.assessmentMode) {
+                        AssessmentMode.MARKS -> {
+                            CompactRowField(
+                                label = "Total marks",
+                                value = state.maxMarksInput,
+                                onValueChange = viewModel::onMaxMarksChange,
+                                placeholder = "100",
+                                keyboardType = KeyboardType.Decimal,
+                            )
+                            CompactRowField(
+                                label = "Pass threshold",
+                                value = state.passThresholdInput,
+                                onValueChange = viewModel::onPassThresholdChange,
+                                placeholder = "40",
+                                keyboardType = KeyboardType.Decimal,
+                            )
+                        }
+                        AssessmentMode.GRADE_BASED -> {
+                            CompactRowField(
+                                label = "Grade scheme",
+                                value = state.gradeSchemeInput,
+                                onValueChange = viewModel::onGradeSchemeChange,
+                                placeholder = "e.g. Letter O–F",
+                            )
+                            CompactRowField(
+                                label = "Passing grade",
+                                value = state.passingGradeInput,
+                                onValueChange = viewModel::onPassingGradeChange,
+                                placeholder = "e.g. C",
+                            )
+                        }
+                        AssessmentMode.CUSTOM -> {
+                            CompactRowField(
+                                label = "Custom scheme",
+                                value = state.customSchemeNameInput,
+                                onValueChange = viewModel::onCustomSchemeNameChange,
+                                placeholder = "e.g. Viva rubric",
+                            )
+                            CompactRowMultiline(
+                                label = "Criteria summary",
+                                value = state.customCriteriaInput,
+                                onValueChange = viewModel::onCustomCriteriaChange,
+                                placeholder = "Short rule / criteria text",
+                            )
+                        }
+                    }
                 }
 
                 FormSectionCard(
@@ -365,7 +396,6 @@ private fun CreateExamHeader(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding()
             .background(LedgerPalette.Plum)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -460,7 +490,13 @@ private fun CompactChipRow(
                 FilterChip(
                     selected = selected,
                     onClick = { onSelected(id) },
-                    label = { Text(display) },
+                    label = {
+                        Text(
+                            text = display,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
                     shape = RoundedCornerShape(5.dp),
                     border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
@@ -476,6 +512,40 @@ private fun CompactChipRow(
 }
 
 @Composable
+private fun CompactRowMultiline(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(top = 10.dp)
+                .weight(0.38f),
+            maxLines = 2,
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(0.62f),
+            placeholder = { Text(placeholder) },
+            minLines = 2,
+            maxLines = 4,
+            shape = RoundedCornerShape(6.dp),
+            colors = compactFieldColors(),
+        )
+    }
+}
+
+@Composable
 private fun compactFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = Color.Transparent,
     unfocusedBorderColor = Color.Transparent,
@@ -485,14 +555,3 @@ private fun compactFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
 )
 
-private fun statusLabel(status: ExamStatus): String = when (status) {
-    ExamStatus.DRAFT -> "Draft"
-    ExamStatus.PUBLISHED -> "Published"
-    ExamStatus.COMPLETED -> "Completed"
-}
-
-private fun maxScoreFieldLabel(mode: AssessmentMode): String = when (mode) {
-    AssessmentMode.MARKS -> "Max marks"
-    AssessmentMode.GRADE_BASED -> "Grade scale (max points)"
-    AssessmentMode.CUSTOM -> "Rubric cap (max points)"
-}
