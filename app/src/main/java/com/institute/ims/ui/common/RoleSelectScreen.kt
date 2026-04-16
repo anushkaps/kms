@@ -49,124 +49,116 @@ fun RoleSelectScreen(
     val adminUser = users.firstOrNull { it.role == UserRole.ADMIN }
     val facultyUser = users.firstOrNull { it.role == UserRole.FACULTY }
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F3EE)),
+            .background(Color(0xFFF5F3EE))
+            .systemBarsPadding()
+            .navigationBarsPadding(),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(200.dp)
                 .background(Color(0xFF1A1814)),
-        )
-        Box(
+        ) {
+            Text(
+                text = "LEDGER IMS · Demo Mode",
+                color = Color(0xFF6E6A62),
+                fontWeight = FontWeight.W500,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 24.dp, top = 16.dp),
+            )
+            Text(
+                text = "Sign in as",
+                color = Color(0xFFF5F3EE),
+                fontWeight = FontWeight.W600,
+                fontSize = 28.sp,
+                lineHeight = 34.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 24.dp, top = 40.dp),
+            )
+            Text(
+                text = "Select your role to continue",
+                color = Color(0xFF6E6A62),
+                fontWeight = FontWeight.W400,
+                fontSize = 14.sp,
+                lineHeight = 17.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 24.dp, top = 82.dp),
+            )
+        }
+
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp)
-                .background(Color(0xFF1A1814)),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding(),
+                .weight(1f)
+                .padding(horizontal = 24.dp),
         ) {
-        Text(
-            text = "LEDGER IMS · Demo Mode",
-            color = Color(0xFF6E6A62),
-            fontWeight = FontWeight.W500,
-            fontSize = 10.sp,
-            lineHeight = 12.sp,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 24.dp, top = 56.dp),
-        )
-        Text(
-            text = "Sign in as",
-            color = Color(0xFFF5F3EE),
-            fontWeight = FontWeight.W600,
-            fontSize = 28.sp,
-            lineHeight = 34.sp,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 24.dp, top = 80.dp),
-        )
-        Text(
-            text = "Select your role to continue",
-            color = Color(0xFF6E6A62),
-            fontWeight = FontWeight.W400,
-            fontSize = 14.sp,
-            lineHeight = 17.sp,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 24.dp, top = 122.dp),
-        )
-
-        adminUser?.let { user ->
-            RoleCard(
-                user = user,
-                selected = user.id == selectedUserId,
+            Spacer(modifier = Modifier.height(24.dp))
+            adminUser?.let { user ->
+                RoleCard(
+                    user = user,
+                    selected = user.id == selectedUserId,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { selectedUserId = user.id },
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            facultyUser?.let { user ->
+                RoleCard(
+                    user = user,
+                    selected = user.id == selectedUserId,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { selectedUserId = user.id },
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Button(
+                onClick = { selectedUser?.let(onUserSelected) },
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 244.dp),
-                onClick = { selectedUserId = user.id },
-            )
-        }
-        facultyUser?.let { user ->
-            RoleCard(
-                user = user,
-                selected = user.id == selectedUserId,
+                    .fillMaxWidth()
+                    .height(52.dp),
+                enabled = selectedUser != null,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF1B4FBF),
+                    contentColor = Color.White,
+                ),
+            ) {
+                Text(
+                    text = selectedUser?.let(::roleEntryLabel) ?: "Select a role",
+                    fontWeight = FontWeight.W600,
+                    fontSize = 15.sp,
+                    lineHeight = 18.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 352.dp),
-                onClick = { selectedUserId = user.id },
-            )
-        }
-
-        Card(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 684.dp)
-                .width(342.dp)
-                .height(48.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF0E5)),
-            border = BorderStroke(1.dp, Color(0xFFF5D9B5)),
-            shape = RoundedCornerShape(8.dp),
-        ) {
-            Text(
-                text = "Demo mode - no credentials required . Local data only.",
-                color = Color(0xFFB85C00),
-                fontWeight = FontWeight.W400,
-                fontSize = 11.sp,
-                lineHeight = 13.sp,
-                modifier = Modifier.padding(start = 16.dp, top = 10.dp),
-            )
-        }
-
-        Button(
-            onClick = { selectedUser?.let(onUserSelected) },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 748.dp)
-                .navigationBarsPadding()
-                .width(342.dp)
-                .height(52.dp),
-            enabled = selectedUser != null,
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1B4FBF),
-                contentColor = Color.White,
-            ),
-        ) {
-            Text(
-                text = selectedUser?.let(::roleEntryLabel) ?: "Select a role",
-                fontWeight = FontWeight.W600,
-                fontSize = 15.sp,
-                lineHeight = 18.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF0E5)),
+                border = BorderStroke(1.dp, Color(0xFFF5D9B5)),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text(
+                    text = "Demo mode - no credentials required . Local data only.",
+                    color = Color(0xFFB85C00),
+                    fontWeight = FontWeight.W400,
+                    fontSize = 11.sp,
+                    lineHeight = 13.sp,
+                    modifier = Modifier.padding(start = 16.dp, top = 10.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -182,7 +174,6 @@ private fun RoleCard(
     val iconBg = if (user.role == UserRole.ADMIN) Color(0xFFEEF2FB) else Color(0xFFEAF4EF)
     Card(
         modifier = modifier
-            .width(342.dp)
             .height(88.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
