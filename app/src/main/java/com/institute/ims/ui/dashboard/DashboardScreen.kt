@@ -306,7 +306,7 @@ fun DashboardScreen(
 
                 item {
                     DashboardNewsCard(
-                        newsItems = displayedNews.take(2),
+                        newsItems = displayedNews.take(4),
                         onNewsClick = { item -> selectedNewsDetail = item },
                     )
                 }
@@ -859,18 +859,14 @@ private fun DashboardNewsCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(160.dp)
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            val first = newsItems.getOrNull(0)
-            if (first != null) {
-                NewsRowLine(item = first, onClick = { onNewsClick(first) })
-            }
-            HorizontalDivider(color = Color(0xFFEEECE5))
-            val second = newsItems.getOrNull(1)
-            if (second != null) {
-                NewsRowLine(item = second, onClick = { onNewsClick(second) })
+            newsItems.forEachIndexed { index, item ->
+                if (index > 0) {
+                    HorizontalDivider(color = Color(0xFFEEECE5))
+                }
+                NewsRowLine(item = item, onClick = { onNewsClick(item) })
             }
         }
     }
