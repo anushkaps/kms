@@ -80,6 +80,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.DashboardCapabilityHighlight
@@ -236,7 +237,7 @@ fun DashboardScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(200.dp),
+                                .height(156.dp),
                         ) {
                             DashboardHeader(
                                 displayName = uiState.displayName,
@@ -254,7 +255,9 @@ fun DashboardScreen(
                                     .fillMaxWidth(),
                             ) {
                                 Surface(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
                                     shape = RoundedCornerShape(22.dp),
                                     color = Color.White,
                                     border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
@@ -262,15 +265,15 @@ fun DashboardScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 10.dp, vertical = 2.dp),
+                                            .padding(horizontal = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.Search,
                                             contentDescription = null,
-                                            tint = Color(0xFF888780),
-                                            modifier = Modifier.size(20.dp),
+                                            tint = Color(0xFFD4CFC5),
+                                            modifier = Modifier.size(16.dp),
                                         )
                                         BasicTextField(
                                             value = uiState.searchQuery,
@@ -278,7 +281,10 @@ fun DashboardScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .onFocusChanged { searchFieldFocused = it.isFocused },
-                                            textStyle = MaterialTheme.typography.bodySmall.copy(color = LedgerPalette.Ink),
+                                            textStyle = MaterialTheme.typography.bodySmall.copy(
+                                                color = LedgerPalette.Ink,
+                                                fontSize = 13.sp,
+                                            ),
                                             singleLine = true,
                                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                             keyboardActions = KeyboardActions(
@@ -293,7 +299,7 @@ fun DashboardScreen(
                                                     if (uiState.searchQuery.isEmpty()) {
                                                         Text(
                                                             text = "Search students, exams, news...",
-                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontSize = 13.sp,
                                                             color = Color(0xFF888780),
                                                         )
                                                     }
@@ -303,7 +309,20 @@ fun DashboardScreen(
                                         )
                                         if (uiState.searchQuery.isNotEmpty()) {
                                             TextButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                                Text("Clear")
+                                                Text("Clear", fontSize = 11.sp)
+                                            }
+                                        } else {
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = Color(0xFFF5F3EE),
+                                                border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+                                            ) {
+                                                Text(
+                                                    text = "⌘K",
+                                                    fontSize = 9.sp,
+                                                    color = Color(0xFF888780),
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                                )
                                             }
                                         }
                                     }
@@ -1119,19 +1138,13 @@ private fun DashboardHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
+            .height(136.dp)
             .background(LedgerPalette.Ink),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp)
-                .background(LedgerPalette.Ink),
-        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, top = 56.dp)
+                .padding(start = 24.dp, top = 12.dp)
                 .clickable(onClick = onProfileClick),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -1167,7 +1180,7 @@ private fun DashboardHeader(
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(end = 24.dp, top = 58.dp)
+                .padding(end = 24.dp, top = 14.dp)
                 .size(32.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(Color(0xFF2C2B27))
@@ -1182,13 +1195,13 @@ private fun DashboardHeader(
             )
         }
         Column(
-            modifier = Modifier.padding(start = 24.dp, top = 102.dp, end = 24.dp),
+            modifier = Modifier.padding(start = 24.dp, top = 62.dp, end = 24.dp),
         ) {
             Text(
                 text = timeOfDayGreeting.ifBlank { "Good morning." },
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color(0xFFF5F3EE),
+                fontSize = 26.sp,
                 fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFF5F3EE),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

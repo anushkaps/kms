@@ -150,27 +150,21 @@ private fun ProfileHeader(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(185.dp)
+                .height(176.dp)
                 .background(Color(0xFF0F7A5A)),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp)
-                    .background(Color(0xFF0F7A5A)),
-            )
             Text(
                 text = "< Students",
                 color = Color.White.copy(alpha = 0.6f),
                 fontSize = 11.sp,
                 lineHeight = 13.sp,
                 modifier = Modifier
-                    .padding(start = 24.dp, top = 52.dp)
+                    .padding(start = 24.dp, top = 8.dp)
                     .clickable(onClick = onBack),
             )
             Box(
                 modifier = Modifier
-                    .padding(start = 24.dp, top = 72.dp)
+                    .padding(start = 24.dp, top = 28.dp)
                     .size(56.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.2f)),
@@ -189,7 +183,7 @@ private fun ProfileHeader(
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 22.sp,
                 lineHeight = 27.sp,
-                modifier = Modifier.padding(start = 92.dp, top = 78.dp),
+                modifier = Modifier.padding(start = 92.dp, top = 34.dp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -198,13 +192,13 @@ private fun ProfileHeader(
                 color = Color.White.copy(alpha = 0.65f),
                 fontSize = 12.sp,
                 lineHeight = 15.sp,
-                modifier = Modifier.padding(start = 92.dp, top = 108.dp),
+                modifier = Modifier.padding(start = 92.dp, top = 64.dp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Surface(
                 modifier = Modifier
-                    .padding(start = 92.dp, top = 130.dp)
+                    .padding(start = 92.dp, top = 86.dp)
                     .width(200.dp)
                     .height(20.dp),
                 shape = RoundedCornerShape(4.dp),
@@ -216,7 +210,7 @@ private fun ProfileHeader(
                         color = Color.White.copy(alpha = 0.85f),
                         fontWeight = FontWeight.Medium,
                         fontSize = 10.sp,
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier.padding(start = 6.dp),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -229,25 +223,41 @@ private fun ProfileHeader(
 
 @Composable
 private fun ProfileTabs() {
+    val tabs = listOf("Overview", "Exams", "Notes")
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp)
             .background(Color(0xFF0B6348)),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "Overview",
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+        tabs.forEachIndexed { index, label ->
+            val isActive = index == 0
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .then(
+                        if (isActive) Modifier.background(Color.White.copy(alpha = 0.15f))
+                        else Modifier,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    color = if (isActive) Color.White else Color.White.copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                    fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                )
+                if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .align(Alignment.BottomCenter)
+                            .background(Color.White),
+                    )
+                }
+            }
         }
     }
 }
@@ -271,14 +281,14 @@ private fun ProfileSectionCard(
                 color = Color(0xFF0F7A5A),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(horizontal = 14.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
             HorizontalDivider(color = Color(0xFFEEECE5), modifier = Modifier.padding(top = 6.dp))
             rows.forEachIndexed { index, (label, value) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

@@ -175,31 +175,31 @@ private fun StudentHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(156.dp)
             .background(headerGreen),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
-                modifier = Modifier
-                    .clickable(onClick = onBack),
+                modifier = Modifier.clickable(onClick = onBack),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White.copy(alpha = 0.75f),
-                    modifier = Modifier.size(18.dp),
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(14.dp),
                 )
                 Text(
                     text = "Dashboard",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    lineHeight = 15.sp,
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 11.sp,
+                    lineHeight = 13.sp,
                 )
             }
             Text(
@@ -215,40 +215,34 @@ private fun StudentHeader(
                 fontSize = 12.sp,
                 lineHeight = 15.sp,
             )
-            // Capsule search: translucent fill + hairline border (no clipped OutlinedTextField chrome)
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(percent = 50),
-                color = Color.White.copy(alpha = 0.14f),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.12f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(start = 10.dp, end = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(Color.White.copy(alpha = 0.18f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Search,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.9f),
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Outlined.Search,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.size(14.dp),
+                    )
                     BasicTextField(
                         value = query,
                         onValueChange = onQueryChange,
                         modifier = Modifier.weight(1f),
                         textStyle = MaterialTheme.typography.bodySmall.copy(
                             color = Color.White,
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                         ),
                         singleLine = true,
                         cursorBrush = SolidColor(Color.White),
@@ -259,8 +253,8 @@ private fun StudentHeader(
                                 if (query.isEmpty()) {
                                     Text(
                                         text = "Search by name, roll no...",
-                                        fontSize = 14.sp,
-                                        color = Color.White.copy(alpha = 0.55f),
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.65f),
                                     )
                                 }
                                 innerTextField()
