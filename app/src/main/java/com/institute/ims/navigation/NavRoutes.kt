@@ -13,6 +13,7 @@ object NavRoutes {
     const val News = "news/{query}"
     const val RegionalSettings = "regional_settings"
     const val CapabilityInfo = "capability_info/{stubId}"
+    const val Search = "search/{userId}"
 
     fun dashboard(userId: String): String = "dashboard/${encode(userId)}"
 
@@ -25,6 +26,8 @@ object NavRoutes {
     fun report(examId: String): String = "report/${encode(examId)}"
 
     fun news(query: String = ""): String = "news/${encode(query)}"
+
+    fun search(userId: String): String = "search/${encode(userId)}"
 
     private fun encode(segment: String): String = android.net.Uri.encode(segment)
 }

@@ -17,6 +17,7 @@ import com.institute.ims.ui.common.RoleSelectScreen
 import com.institute.ims.ui.common.SplashScreen
 import com.institute.ims.ui.dashboard.DashboardScreen
 import com.institute.ims.ui.dashboard.NewsScreen
+import com.institute.ims.ui.dashboard.SearchScreen
 import com.institute.ims.ui.examinations.CreateExamScreen
 import com.institute.ims.ui.examinations.ExamDetailScreen
 import com.institute.ims.ui.examinations.ExamListScreen
@@ -106,6 +107,9 @@ fun ImsNavHost(
                     },
                     onOpenCapabilityInfo = { stubId ->
                         navController.navigate(NavRoutes.capabilityInfo(stubId))
+                    },
+                    onOpenSearch = {
+                        navController.navigate(NavRoutes.search(user.id))
                     },
                 )
             }
@@ -219,6 +223,50 @@ fun ImsNavHost(
             ReportScreen(
                 examId = examId,
                 onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = NavRoutes.Search,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val rawId = entry.arguments?.getString("userId").orEmpty()
+            val userId = android.net.Uri.decode(rawId)
+            SearchScreen(
+                userId = userId,
+                onBack = { navController.popBackStack() },
+                onOpenStudents = {
+                    navController.navigate(NavRoutes.StudentList) {
+                        popUpTo(NavRoutes.Search) { inclusive = true }
+                    }
+                },
+                onOpenExams = {
+                    navController.navigate(NavRoutes.ExamList) {
+                        popUpTo(NavRoutes.Search) { inclusive = true }
+                    }
+                },
+                onOpenNews = { query ->
+                    navController.navigate(NavRoutes.news(query)) {
+                        popUpTo(NavRoutes.Search) { inclusive = true }
+                    }
+                },
+                onOpenStudentProfile = { studentId ->
+                    navController.navigate(NavRoutes.studentProfile(studentId)) {
+                        popUpTo(NavRoutes.Search) { inclusive = true }
+                    }
+                },
+                onOpenExamDetail = { examId ->
+                    navController.navigate(NavRoutes.examDetail(examId)) {
+                        popUpTo(NavRoutes.Search) { inclusive = true }
+                    }
+                },
+                onOpenRegionalSettings = {
+                    navController.navigate(NavRoutes.RegionalSettings) {
+                        popUpTo(NavRoutes.Search) { inclusive = true }
+                    }
+                },
             )
         }
     }

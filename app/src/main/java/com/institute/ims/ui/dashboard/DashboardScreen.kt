@@ -1,13 +1,10 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+﻿@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.institute.ims.ui.dashboard
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,9 +26,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Assignment
@@ -62,22 +56,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -107,6 +95,7 @@ fun DashboardScreen(
     onOpenExamDetail: (examId: String) -> Unit,
     onOpenRegionalSettings: () -> Unit,
     onOpenCapabilityInfo: (stubId: String) -> Unit,
+    onOpenSearch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: DashboardViewModel = viewModel(
@@ -114,17 +103,10 @@ fun DashboardScreen(
         factory = DashboardViewModel.Factory(userId),
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val focusManager = LocalFocusManager.current
-    var searchFieldFocused by remember { mutableStateOf(false) }
-    var forceSearchResultsVisible by rememberSaveable { mutableStateOf(false) }
     var showAccountSheet by remember { mutableStateOf(false) }
     var showNotificationsSheet by remember { mutableStateOf(false) }
     var selectedNewsDetail by remember { mutableStateOf<NewsItem?>(null) }
     var statExplainer by remember { mutableStateOf<DashboardStat?>(null) }
-
-    val groupedSuggestions = remember(uiState.searchQuery, uiState.news) {
-        viewModel.navigationSuggestionsGrouped()
-    }
 
     val displayedNews = remember(uiState.news, uiState.newsSpotlightId) {
         when {
@@ -134,61 +116,7 @@ fun DashboardScreen(
         }
     }
 
-    val searchResultsVisible =
-        uiState.searchQuery.isNotBlank() &&
-            (searchFieldFocused || forceSearchResultsVisible)
-
-    fun dismissSearchOverlay() {
-        forceSearchResultsVisible = false
-        focusManager.clearFocus()
-    }
-
-    BackHandler(enabled = searchResultsVisible) {
-        dismissSearchOverlay()
-        viewModel.onSearchQueryChange("")
-    }
-
-    fun applySuggestion(s: DashboardNavSuggestion) {
-        dismissSearchOverlay()
-        when (val a = s.action) {
-            DashboardNavAction.OpenStudentDirectory -> {
-                viewModel.onSearchQueryChange("")
-                onOpenStudents()
-            }
-            DashboardNavAction.OpenExamList -> {
-                viewModel.onSearchQueryChange("")
-                onOpenExams()
-            }
-            is DashboardNavAction.OpenStudentProfile -> {
-                viewModel.onSearchQueryChange("")
-                onOpenStudentProfile(a.studentId)
-            }
-            is DashboardNavAction.OpenExamDetail -> {
-                viewModel.onSearchQueryChange("")
-                onOpenExamDetail(a.examId)
-            }
-            is DashboardNavAction.OpenNews -> {
-                viewModel.onSearchQueryChange("")
-                onOpenNews(a.query)
-            }
-            is DashboardNavAction.OpenNewsDetail -> {
-                viewModel.onSearchQueryChange("")
-                val hit = uiState.news.find { it.id == a.newsId }
-                if (hit != null) {
-                    selectedNewsDetail = hit
-                } else {
-                    onOpenNews("")
-                }
-            }
-            DashboardNavAction.OpenRegionalSettings -> {
-                viewModel.onSearchQueryChange("")
-                onOpenRegionalSettings()
-            }
-        }
-    }
-
     fun onStatCardClick(stat: DashboardStat) {
-        focusManager.clearFocus()
         when (stat.id) {
             "students" -> onOpenStudents()
             "exams", "upcoming_exams" -> onOpenExams()
@@ -207,20 +135,15 @@ fun DashboardScreen(
     val newsDetailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val statSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    LaunchedEffect(uiState.searchQuery) {
-        if (uiState.searchQuery.isBlank()) {
-            forceSearchResultsVisible = false
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = LedgerPalette.Ink,
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -257,7 +180,8 @@ fun DashboardScreen(
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(44.dp),
+                                        .height(44.dp)
+                                        .clickable { onOpenSearch() },
                                     shape = RoundedCornerShape(22.dp),
                                     color = Color.White,
                                     border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
@@ -275,76 +199,25 @@ fun DashboardScreen(
                                             tint = Color(0xFFD4CFC5),
                                             modifier = Modifier.size(16.dp),
                                         )
-                                        BasicTextField(
-                                            value = uiState.searchQuery,
-                                            onValueChange = viewModel::onSearchQueryChange,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .onFocusChanged { searchFieldFocused = it.isFocused },
-                                            textStyle = MaterialTheme.typography.bodySmall.copy(
-                                                color = LedgerPalette.Ink,
-                                                fontSize = 13.sp,
-                                            ),
-                                            singleLine = true,
-                                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                            keyboardActions = KeyboardActions(
-                                                onSearch = {
-                                                    forceSearchResultsVisible = true
-                                                    focusManager.clearFocus()
-                                                },
-                                            ),
-                                            cursorBrush = SolidColor(LedgerPalette.Cobalt),
-                                            decorationBox = { innerTextField ->
-                                                Box(modifier = Modifier.fillMaxWidth()) {
-                                                    if (uiState.searchQuery.isEmpty()) {
-                                                        Text(
-                                                            text = "Search students, exams, news...",
-                                                            fontSize = 13.sp,
-                                                            color = Color(0xFF888780),
-                                                        )
-                                                    }
-                                                    innerTextField()
-                                                }
-                                            },
+                                        Text(
+                                            text = "Search students, exams, news...",
+                                            fontSize = 13.sp,
+                                            color = Color(0xFF888780),
+                                            modifier = Modifier.weight(1f),
                                         )
-                                        if (uiState.searchQuery.isNotEmpty()) {
-                                            TextButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                                Text("Clear", fontSize = 11.sp)
-                                            }
-                                        } else {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFFF5F3EE),
-                                                border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
-                                            ) {
-                                                Text(
-                                                    text = "⌘K",
-                                                    fontSize = 9.sp,
-                                                    color = Color(0xFF888780),
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                                )
-                                            }
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFF5F3EE),
+                                            border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+                                        ) {
+                                            Text(
+                                                text = "⌘K",
+                                                fontSize = 9.sp,
+                                                color = Color(0xFF888780),
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                            )
                                         }
                                     }
-                                }
-                                AnimatedVisibility(visible = searchResultsVisible && groupedSuggestions.isNotEmpty()) {
-                                    InlineSearchResultsCard(
-                                        groups = groupedSuggestions,
-                                        onPick = { applySuggestion(it) },
-                                        modifier = Modifier.padding(top = 8.dp),
-                                    )
-                                }
-                                AnimatedVisibility(
-                                    visible = searchResultsVisible &&
-                                        uiState.searchQuery.isNotBlank() &&
-                                        groupedSuggestions.isEmpty(),
-                                ) {
-                                    Text(
-                                        text = "No matches yet. Try a student name, ID, exam title, or “Students” / “Exams”.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 8.dp),
-                                    )
                                 }
                             }
                         }
@@ -354,60 +227,8 @@ fun DashboardScreen(
                 item {
                     TodayRow(
                         overviewLine = uiState.overviewLine,
-                        onClick = {
-                            dismissSearchOverlay()
-                            viewModel.refreshHubSummary()
-                        },
+                        onClick = { viewModel.refreshHubSummary() },
                     )
-                }
-
-                item {
-                    Text(
-                        text = "OVERVIEW",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF6E6A62),
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    val topStats = uiState.stats.take(4)
-                    val rowA = topStats.take(2)
-                    val rowB = topStats.drop(2).take(2)
-                    if (rowA.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            rowA.forEachIndexed { index, stat ->
-                                DashboardStatMiniCard(
-                                    stat = stat,
-                                    iconColor = statDotColor(index),
-                                    onClick = { onStatCardClick(stat) },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                            if (rowA.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                    if (rowB.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            rowB.forEachIndexed { index, stat ->
-                                DashboardStatMiniCard(
-                                    stat = stat,
-                                    iconColor = statDotColor(index + 2),
-                                    onClick = { onStatCardClick(stat) },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                            if (rowB.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
                 }
 
                 item {
@@ -432,7 +253,6 @@ fun DashboardScreen(
                                 subtitle = card.description,
                                 accent = LedgerPalette.Cobalt,
                                 onClick = {
-                                    dismissSearchOverlay()
                                     viewModel.onModuleClick(
                                         id = card.id,
                                         onOpenStudents = onOpenStudents,
@@ -448,7 +268,6 @@ fun DashboardScreen(
                                 subtitle = card.description,
                                 accent = LedgerPalette.Plum,
                                 onClick = {
-                                    dismissSearchOverlay()
                                     viewModel.onModuleClick(
                                         id = card.id,
                                         onOpenStudents = onOpenStudents,
@@ -480,10 +299,7 @@ fun DashboardScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = LedgerPalette.Cobalt,
                             fontWeight = FontWeight.Medium,
-                            modifier = Modifier.clickable {
-                                dismissSearchOverlay()
-                                onOpenNews("")
-                            },
+                            modifier = Modifier.clickable { onOpenNews("") },
                         )
                     }
                 }
@@ -491,32 +307,11 @@ fun DashboardScreen(
                 item {
                     DashboardNewsCard(
                         newsItems = displayedNews.take(2),
-                        onNewsClick = { item ->
-                            dismissSearchOverlay()
-                            selectedNewsDetail = item
-                        },
+                        onNewsClick = { item -> selectedNewsDetail = item },
                     )
                 }
             }
 
-            AnimatedVisibility(
-                visible = searchResultsVisible,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 198.dp),
-            ) {
-                val scrimInteraction = remember { MutableInteractionSource() }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = scrimInteraction,
-                            indication = null,
-                        ) {
-                            dismissSearchOverlay()
-                        },
-                )
-            }
         }
     }
 
@@ -580,7 +375,7 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun InlineSearchResultsCard(
+internal fun InlineSearchResultsCard(
     groups: List<Pair<String, List<DashboardNavSuggestion>>>,
     onPick: (DashboardNavSuggestion) -> Unit,
     modifier: Modifier = Modifier,
@@ -704,7 +499,7 @@ private fun NotificationsSheetContent(
 }
 
 @Composable
-private fun NewsDetailSheetContent(
+internal fun NewsDetailSheetContent(
     news: NewsItem,
     onClose: () -> Unit,
 ) {
@@ -885,7 +680,7 @@ private fun RegionalSettingsSummaryCard(
 }
 
 @Composable
-private fun HubSearchSuggestionsCard(
+internal fun HubSearchSuggestionsCard(
     suggestions: List<DashboardNavSuggestion>,
     onPick: (DashboardNavSuggestion) -> Unit,
 ) {

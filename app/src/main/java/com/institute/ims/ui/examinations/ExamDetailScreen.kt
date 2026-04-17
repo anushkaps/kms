@@ -190,23 +190,6 @@ private fun SummaryHeader(
                 .padding(start = 24.dp, top = 8.dp)
                 .clickable(onClick = onBack),
         )
-        // Edit button
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 24.dp, top = 8.dp)
-                .width(52.dp)
-                .height(28.dp)
-                .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(6.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "Edit",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White,
-            )
-        }
         // Title
         Text(
             text = exam.title,
@@ -359,7 +342,7 @@ private fun HeaderStat(
     ) {
         Text(
             text = value,
-            fontSize = 20.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
             color = Color.White,
             maxLines = valueMaxLines,

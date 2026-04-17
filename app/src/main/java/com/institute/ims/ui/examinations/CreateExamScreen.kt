@@ -124,7 +124,7 @@ fun CreateExamScreen(
                             value = state.examCategory,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Exam category") },
+                            label = { Text("Exam category", fontSize = 12.sp) },
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeMenu)
                             },
@@ -133,6 +133,7 @@ fun CreateExamScreen(
                                 .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                             shape = RoundedCornerShape(6.dp),
                             colors = compactFieldColors(),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
                         )
                         ExposedDropdownMenu(
                             expanded = typeMenu,
@@ -169,7 +170,7 @@ fun CreateExamScreen(
                                 value = batchName,
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("Batch") },
+                                label = { Text("Batch", fontSize = 12.sp) },
                                 trailingIcon = {
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchMenu)
                                 },
@@ -178,6 +179,7 @@ fun CreateExamScreen(
                                     .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                                 shape = RoundedCornerShape(6.dp),
                                 colors = compactFieldColors(),
+                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
                             )
                         }
                         ExposedDropdownMenu(
@@ -212,7 +214,7 @@ fun CreateExamScreen(
                             value = groupName,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Assessment group") },
+                            label = { Text("Assessment group", fontSize = 12.sp) },
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupMenu)
                             },
@@ -221,6 +223,7 @@ fun CreateExamScreen(
                                 .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                             shape = RoundedCornerShape(6.dp),
                             colors = compactFieldColors(),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
                         )
                         ExposedDropdownMenu(
                             expanded = groupMenu,
@@ -442,7 +445,15 @@ private fun CompactRowField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.weight(0.62f),
-            placeholder = { Text(placeholder) },
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    fontSize = 13.sp,
+                )
+            },
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
             singleLine = true,
             shape = RoundedCornerShape(6.dp),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -521,7 +532,8 @@ private fun CompactRowMultiline(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.weight(0.62f),
-            placeholder = { Text(placeholder) },
+            placeholder = { Text(text = placeholder, fontSize = 13.sp) },
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
             minLines = 2,
             maxLines = 4,
             shape = RoundedCornerShape(6.dp),
