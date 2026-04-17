@@ -2,6 +2,7 @@ package com.institute.ims.ui.examinations
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,18 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -39,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.AssessmentMode
@@ -122,8 +121,8 @@ private fun ExamDetailBody(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             SummaryHeader(
@@ -133,17 +132,36 @@ private fun ExamDetailBody(
                 onBack = onBack,
             )
         }
-        item { ExamDetailCard(exam = exam, groupName = groupName) }
-        item { ResultSectionCard(results = results, onOpenReport = onOpenReport) }
+        item {
+            ExamDetailCard(
+                exam = exam,
+                groupName = groupName,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+        }
+        item {
+            ResultSectionCard(
+                results = results,
+                onOpenReport = onOpenReport,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+        }
         item {
             OutlinedButton(
                 onClick = {},
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .height(44.dp),
                 border = BorderStroke(1.dp, LedgerPalette.Plum),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = LedgerPalette.Plum),
             ) {
-                Text("Enter results")
+                Text(
+                    text = "Add Demo Results",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
     }
@@ -156,75 +174,83 @@ private fun SummaryHeader(
     resultsCount: Int,
     onBack: () -> Unit,
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(LedgerPalette.Plum)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .height(186.dp)
+            .background(LedgerPalette.Plum),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+        // Back nav
+        Text(
+            text = "< Examinations",
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 8.dp)
+                .clickable(onClick = onBack),
+        )
+        // Edit button
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 24.dp, top = 8.dp)
+                .width(52.dp)
+                .height(28.dp)
+                .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(6.dp)),
+            contentAlignment = Alignment.Center,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack, modifier = Modifier.padding(end = 2.dp)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                    )
-                }
-                Text(
-                    text = "Examinations",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.6f),
-                )
-            }
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Color.White.copy(alpha = 0.15f),
-            ) {
-                Text(
-                    text = "Edit",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                )
-            }
+            Text(
+                text = "Edit",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+            )
         }
-
+        // Title
         Text(
             text = exam.title,
-            style = MaterialTheme.typography.titleLarge,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
+            fontSize = 20.sp,
+            lineHeight = 24.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 28.dp, end = 88.dp),
             maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
-
+        // Meta (group · batch)
         Text(
             text = "${groupName ?: exam.groupId} · ${exam.batchLabel}",
-            style = MaterialTheme.typography.bodySmall,
             color = Color.White.copy(alpha = 0.65f),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 58.dp),
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Badges row
+        Row(
+            modifier = Modifier.padding(start = 24.dp, top = 84.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             HeaderChip(exam.scheduleLabel)
             HeaderChip(exam.assessmentMode.uiLabel())
             HeaderChip(exam.evaluationType.name)
         }
-
-        Surface(
+        // Divider 1
+        Box(
             modifier = Modifier
+                .padding(start = 24.dp, end = 24.dp, top = 120.dp)
                 .fillMaxWidth()
-                .height(1.dp),
-            color = Color.White.copy(alpha = 0.35f),
-            content = {},
+                .height(1.dp)
+                .background(Color.White),
         )
-
-        Row(modifier = Modifier.fillMaxWidth()) {
+        // Stats row
+        Row(
+            modifier = Modifier
+                .padding(start = 24.dp, end = 24.dp, top = 130.dp)
+                .fillMaxWidth(),
+        ) {
             when (exam.assessmentMode) {
                 AssessmentMode.MARKS -> {
                     val passLine = exam.passMarksThreshold?.toInt()
@@ -280,17 +306,30 @@ private fun SummaryHeader(
                 modifier = Modifier.weight(1f),
             )
         }
+        // Divider 2
+        Box(
+            modifier = Modifier
+                .padding(start = 24.dp, end = 24.dp, top = 174.dp)
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color.White),
+        )
     }
 }
 
 @Composable
 private fun HeaderChip(text: String) {
-    Surface(shape = RoundedCornerShape(8.dp), color = Color.White.copy(alpha = 0.2f)) {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = Color.White.copy(alpha = 0.18f),
+    ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
             color = Color.White,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            maxLines = 1,
         )
     }
 }
@@ -320,7 +359,7 @@ private fun HeaderStat(
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleLarge,
+            fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
             color = Color.White,
             maxLines = valueMaxLines,
@@ -329,68 +368,82 @@ private fun HeaderStat(
         )
         Text(
             text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
+            fontSize = 9.sp,
             color = Color.White.copy(alpha = 0.6f),
         )
     }
 }
 
 @Composable
-private fun ExamDetailCard(exam: Exam, groupName: String?) {
+private fun ExamDetailCard(
+    exam: Exam,
+    groupName: String?,
+    modifier: Modifier = Modifier,
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
         shape = RoundedCornerShape(10.dp),
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
             Text(
                 text = "EXAM DETAILS",
-                style = MaterialTheme.typography.labelSmall,
+                fontSize = 9.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = LedgerPalette.Plum,
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(color = Color(0xFFEEECE5), modifier = Modifier.padding(top = 6.dp))
             DetailLine("Assessment group", groupName ?: exam.groupId)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(color = Color(0xFFEEECE5))
             when (exam.assessmentMode) {
                 AssessmentMode.MARKS -> {
                     val passLine = exam.passMarksThreshold?.toInt()
                         ?: (exam.maxScore * ExamAnalyticsCalculator.PASS_MARK_FRACTION).toInt()
                     DetailLine("Total marks", exam.maxScore.toInt().toString())
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color(0xFFEEECE5))
                     DetailLine("Pass marks", passLine.toString())
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color(0xFFEEECE5))
                 }
                 AssessmentMode.GRADE_BASED -> {
                     DetailLine("Grade scheme", exam.gradeSchemeName ?: "—")
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color(0xFFEEECE5))
                     DetailLine("Passing grade", exam.passingGradeLabel ?: "—")
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color(0xFFEEECE5))
                 }
                 AssessmentMode.CUSTOM -> {
                     DetailLine("Custom scheme", exam.customSchemeName ?: "—")
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color(0xFFEEECE5))
                     DetailLine("Criteria summary", exam.customCriteriaSummary ?: "—")
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color(0xFFEEECE5))
                 }
             }
             DetailLine("Evaluation", exam.evaluationType.name)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(color = Color(0xFFEEECE5))
             DetailLine("Batch", exam.batchLabel)
         }
     }
 }
 
 @Composable
-private fun ResultSectionCard(results: List<ExamResult>, onOpenReport: () -> Unit) {
+private fun ResultSectionCard(
+    results: List<ExamResult>,
+    onOpenReport: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
         shape = RoundedCornerShape(10.dp),
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -398,55 +451,61 @@ private fun ResultSectionCard(results: List<ExamResult>, onOpenReport: () -> Uni
             ) {
                 Text(
                     text = "RESULTS",
-                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = LedgerPalette.Plum,
                 )
                 Text(
-                    text = "View report  →",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = LedgerPalette.Amber,
+                    text = "View report →",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFFB85C00),
                     modifier = Modifier.clickable(onClick = onOpenReport),
                 )
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(color = Color(0xFFEEECE5), modifier = Modifier.padding(top = 6.dp))
             if (results.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color(0xFFF5F3EE), RoundedCornerShape(8.dp))
+                            .then(
+                                Modifier.border(1.dp, Color(0xFFD4CFC5), RoundedCornerShape(8.dp)),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "—",
+                            fontSize = 16.sp,
+                            color = Color(0xFFD4CFC5),
+                        )
+                    }
                     Text(
                         text = "No results entered yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF6E6A62),
                         textAlign = TextAlign.Center,
                     )
                     Text(
                         text = "Enter results to generate a report",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        color = Color(0xFF888780),
                         textAlign = TextAlign.Center,
                     )
                 }
             } else {
                 results.take(3).forEachIndexed { index, row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(text = row.studentName, style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            text = row.score.toInt().toString(),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
+                    DetailLine(label = row.studentName, value = row.score.toInt().toString())
                     if (index < results.take(3).lastIndex) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        HorizontalDivider(color = Color(0xFFEEECE5))
                     }
                 }
             }
@@ -457,19 +516,23 @@ private fun ResultSectionCard(results: List<ExamResult>, onOpenReport: () -> Uni
 @Composable
 private fun DetailLine(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 11.sp,
+            color = Color(0xFF6E6A62),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            maxLines = 4,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF1A1814),
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End,
         )

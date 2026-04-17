@@ -1,7 +1,10 @@
 package com.institute.ims.ui.examinations
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -14,25 +17,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -49,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.AssessmentMode
@@ -93,7 +93,7 @@ fun CreateExamScreen(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                         ),
-                        modifier = Modifier.padding(horizontal = 20.dp),
+                        modifier = Modifier.padding(horizontal = 24.dp),
                     ) {
                         Text(
                             text = err,
@@ -107,7 +107,7 @@ fun CreateExamScreen(
                 FormSectionCard(
                     title = "Exam identity",
                     subtitle = "",
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 ) {
                     CompactRowField(
                         label = "Exam name",
@@ -242,7 +242,7 @@ fun CreateExamScreen(
                 FormSectionCard(
                     title = "Exam type - what is being assessed",
                     subtitle = "Select the format and scoring method of this exam.",
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 ) {
                     CompactChipRow(
                         label = "Format",
@@ -304,7 +304,7 @@ fun CreateExamScreen(
                 FormSectionCard(
                     title = "Evaluation method - how results are computed",
                     subtitle = "This determines how final scores map to transcripts.",
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 ) {
                     CompactChipRow(
                         label = "Method",
@@ -319,27 +319,23 @@ fun CreateExamScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Row(
+            FilledTonalButton(
+                onClick = { viewModel.save(onSaved) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .height(52.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = LedgerPalette.Plum,
+                    contentColor = Color.White,
+                ),
+                shape = RoundedCornerShape(10.dp),
             ) {
-                FilledTonalButton(
-                    onClick = { viewModel.save(onSaved) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = LedgerPalette.Plum,
-                        contentColor = Color.White,
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                ) {
-                    Text(
-                        text = "Save Exam  →",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
+                Text(
+                    text = "Save Exam  →",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
         }
     }
@@ -354,32 +350,26 @@ private fun FormSectionCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
         shape = RoundedCornerShape(10.dp),
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
             content = {
                 Text(
                     text = title.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = LedgerPalette.Plum,
                 )
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    content = {},
-                )
+                HorizontalDivider(color = Color(0xFFEEECE5))
                 if (subtitle.isNotBlank()) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        fontSize = 10.sp,
+                        color = Color(0xFF888780),
                     )
                 }
                 content()
@@ -393,40 +383,35 @@ private fun CreateExamHeader(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(LedgerPalette.Plum)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .height(96.dp)
+            .background(LedgerPalette.Plum),
     ) {
-        Row(
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White,
-                )
-            }
-            Text(
-                text = "Examinations",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.6f),
-            )
-        }
+        Text(
+            text = "< Examinations",
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 8.dp)
+                .clickable(onClick = onBack),
+        )
         Text(
             text = "New Exam",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
             color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 26.sp,
+            lineHeight = 31.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 28.dp),
         )
         Text(
             text = "Fill in details to create an exam.",
-            style = MaterialTheme.typography.bodySmall,
             color = Color.White.copy(alpha = 0.6f),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 64.dp),
         )
     }
 }
@@ -446,8 +431,8 @@ private fun CompactRowField(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp,
+            color = Color(0xFF6E6A62),
             modifier = Modifier
                 .padding(top = 10.dp)
                 .weight(0.38f),
@@ -525,8 +510,8 @@ private fun CompactRowMultiline(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp,
+            color = Color(0xFF6E6A62),
             modifier = Modifier
                 .padding(top = 10.dp)
                 .weight(0.38f),
@@ -549,9 +534,9 @@ private fun CompactRowMultiline(
 private fun compactFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = Color.Transparent,
     unfocusedBorderColor = Color.Transparent,
-    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+    focusedContainerColor = Color(0xFFF5F3EE),
+    unfocusedContainerColor = Color(0xFFF5F3EE),
+    focusedTextColor = Color(0xFF1A1814),
+    unfocusedTextColor = Color(0xFF1A1814),
 )
 

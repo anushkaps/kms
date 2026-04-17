@@ -13,29 +13,26 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,9 +45,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.EvaluationType
@@ -90,19 +89,13 @@ fun ExamListScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            Box(
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(end = 8.dp, bottom = 8.dp),
+            FloatingActionButton(
+                onClick = onCreateExam,
+                containerColor = LedgerPalette.Plum,
+                contentColor = Color.White,
+                shape = RoundedCornerShape(14.dp),
             ) {
-                FloatingActionButton(
-                    onClick = onCreateExam,
-                    containerColor = LedgerPalette.Plum,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(14.dp),
-                ) {
-                    Icon(Icons.Outlined.Add, contentDescription = "New exam")
-                }
+                Icon(Icons.Outlined.Add, contentDescription = "New exam")
             }
         },
     ) { innerPadding ->
@@ -145,16 +138,17 @@ fun ExamListScreen(
                     item {
                         Text(
                             text = sectionTitle.uppercase(),
-                            style = MaterialTheme.typography.labelMedium,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = LedgerPalette.Plum,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
                         )
                     }
                     item {
                         GroupedExamCard(
                             exams = exams,
                             onOpenExam = onOpenExam,
-                            modifier = Modifier.padding(horizontal = 20.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp),
                         )
                     }
                 }
@@ -172,69 +166,85 @@ private fun HeaderBlock(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(LedgerPalette.Plum)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .height(152.dp)
+            .background(LedgerPalette.Plum),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Text(
+            text = "< Dashboard",
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 8.dp)
+                .clickable(onClick = onBack),
+        )
+        Text(
+            text = "Examinations",
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 26.sp,
+            lineHeight = 31.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 28.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = "$totalExams exams · $totalGroups groups",
+            color = Color.White.copy(alpha = 0.65f),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+            modifier = Modifier.padding(start = 24.dp, top = 62.dp),
+        )
+        Surface(
+            modifier = Modifier
+                .padding(start = 24.dp, end = 24.dp, top = 88.dp)
+                .fillMaxWidth()
+                .height(40.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White.copy(alpha = 0.15f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
         ) {
-            IconButton(onClick = onBack) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 12.dp, end = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White,
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(12.dp),
                 )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Examinations",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
-                )
-                Text(
-                    text = "$totalExams active • $totalGroups groups",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.65f),
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.weight(1f),
+                    textStyle = MaterialTheme.typography.bodySmall.copy(
+                        color = Color.White,
+                        fontSize = 12.sp,
+                    ),
+                    singleLine = true,
+                    cursorBrush = SolidColor(Color.White),
+                    decorationBox = { innerTextField ->
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    text = "Search exams…",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.6f),
+                                )
+                            }
+                            innerTextField()
+                        }
+                    },
                 )
             }
         }
-
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = "Search exams…",
-                    color = Color.White.copy(alpha = 0.6f),
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    Icons.Outlined.Search,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.5f),
-                )
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(20.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.White.copy(alpha = 0.35f),
-                unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
-                focusedContainerColor = Color.White.copy(alpha = 0.15f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.15f),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                cursorColor = Color.White,
-            ),
-        )
     }
 }
 
@@ -353,13 +363,9 @@ private fun GroupedExamCard(
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                 )
                 if (idx != exams.lastIndex) {
-                    Surface(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .height(1.dp)
-                            .fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        content = {},
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = Color(0xFFEEECE5),
                     )
                 }
             }
@@ -375,28 +381,29 @@ private fun ExamRow(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        Icon(
-            imageVector = Icons.Outlined.Circle,
-            contentDescription = null,
-            tint = dotColorFor(exam.evaluationType),
-            modifier = Modifier.size(10.dp),
+        Box(
+            modifier = Modifier
+                .padding(top = 3.dp)
+                .size(10.dp)
+                .background(dotColorFor(exam.evaluationType), CircleShape),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = exam.title,
-                style = MaterialTheme.typography.titleSmall,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF1A1814),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "${exam.batchLabel} · ${exam.maxScore.toInt()} marks",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.sp,
+                color = Color(0xFF6E6A62),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

@@ -59,7 +59,7 @@ fun RoleSelectScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(176.dp)
                 .background(Color(0xFF1A1814)),
         ) {
             Text(
@@ -70,7 +70,7 @@ fun RoleSelectScreen(
                 lineHeight = 12.sp,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 24.dp, top = 16.dp),
+                    .padding(start = 24.dp, top = 12.dp),
             )
             Text(
                 text = "Sign in as",
@@ -80,7 +80,7 @@ fun RoleSelectScreen(
                 lineHeight = 34.sp,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 24.dp, top = 40.dp),
+                    .padding(start = 24.dp, top = 36.dp),
             )
             Text(
                 text = "Select your role to continue",
@@ -90,7 +90,7 @@ fun RoleSelectScreen(
                 lineHeight = 17.sp,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 24.dp, top = 82.dp),
+                    .padding(start = 24.dp, top = 78.dp),
             )
         }
 
@@ -119,6 +119,24 @@ fun RoleSelectScreen(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF0E5)),
+                border = BorderStroke(1.dp, Color(0xFFF5D9B5)),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text(
+                    text = "Demo mode — no credentials required. Local data only.",
+                    color = Color(0xFFB85C00),
+                    fontWeight = FontWeight.W400,
+                    fontSize = 11.sp,
+                    lineHeight = 13.sp,
+                    modifier = Modifier.padding(start = 16.dp, top = 10.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { selectedUser?.let(onUserSelected) },
                 modifier = Modifier
@@ -138,24 +156,6 @@ fun RoleSelectScreen(
                     lineHeight = 18.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF0E5)),
-                border = BorderStroke(1.dp, Color(0xFFF5D9B5)),
-                shape = RoundedCornerShape(8.dp),
-            ) {
-                Text(
-                    text = "Demo mode - no credentials required . Local data only.",
-                    color = Color(0xFFB85C00),
-                    fontWeight = FontWeight.W400,
-                    fontSize = 11.sp,
-                    lineHeight = 13.sp,
-                    modifier = Modifier.padding(start = 16.dp, top = 10.dp),
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -280,6 +280,6 @@ private fun FacultyGlyph() {
 }
 
 private fun roleEntryLabel(user: User): String = when (user.role) {
-    UserRole.ADMIN -> "Enter as Institute Admin ->"
-    UserRole.FACULTY -> "Enter as Faculty Member ->"
+    UserRole.ADMIN -> "Enter as Institute Admin →"
+    UserRole.FACULTY -> "Enter as Faculty Member →"
 }
