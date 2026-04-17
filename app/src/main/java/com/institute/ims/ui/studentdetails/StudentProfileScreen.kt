@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.Student
 import com.institute.ims.data.model.StudentStatus
+import androidx.compose.foundation.layout.fillMaxHeight
 
 @Composable
 fun StudentProfileScreen(
@@ -236,6 +237,10 @@ private fun ProfileTabs() {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
+                    .background(
+                        if (isActive) Color.White.copy(alpha = 0.15f)
+                        else Color.Transparent
+                    )
                     .then(
                         if (isActive) Modifier.background(Color.White.copy(alpha = 0.15f))
                         else Modifier,
