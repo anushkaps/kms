@@ -128,6 +128,12 @@ fun ImsNavHost(
         composable(NavRoutes.RegionalSettings) {
             RegionalSettingsScreen(
                 onBack = { navController.popBackStack() },
+                onSignOut = {
+                    navController.navigate(NavRoutes.RoleSelect) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
 

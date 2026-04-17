@@ -35,16 +35,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Assignment
-import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.Card
@@ -246,10 +245,8 @@ fun DashboardScreen(
                                 timeOfDayGreeting = uiState.timeOfDayGreeting,
                                 roleContextLine = uiState.roleContextLine,
                                 instituteSubtitle = uiState.instituteSubtitle,
-                                hasUnreadNotifications = uiState.hasUnreadNotifications,
                                 onProfileClick = { showAccountSheet = true },
-                                onNotificationsClick = { showNotificationsSheet = true },
-                                onSignOut = onSignOut,
+                                onOpenSettings = { onOpenRegionalSettings() },
                             )
                             Column(
                                 modifier = Modifier
@@ -1116,10 +1113,8 @@ private fun DashboardHeader(
     timeOfDayGreeting: String,
     roleContextLine: String,
     instituteSubtitle: String,
-    hasUnreadNotifications: Boolean,
     onProfileClick: () -> Unit,
-    onNotificationsClick: () -> Unit,
-    onSignOut: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -1169,55 +1164,22 @@ private fun DashboardHeader(
                 )
             }
         }
-        Row(
+        Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(end = 24.dp, top = 58.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(end = 24.dp, top = 58.dp)
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF2C2B27))
+                .clickable(onClick = onOpenSettings),
+            contentAlignment = Alignment.Center,
         ) {
-            Box {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF2C2B27))
-                        .clickable(onClick = onNotificationsClick),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Notifications,
-                        contentDescription = "Notifications",
-                        tint = Color(0xFFD4CFC5),
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                if (hasUnreadNotifications) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .offset(x = 3.dp, y = (-2).dp)
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFC0352B)),
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF2C2B27))
-                    .clickable(onClick = onSignOut),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Logout,
-                    contentDescription = "Sign out",
-                    tint = Color(0xFFD4CFC5),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+            Icon(
+                imageVector = Icons.Outlined.Settings,
+                contentDescription = "Settings",
+                tint = Color(0xFFD4CFC5),
+                modifier = Modifier.size(16.dp),
+            )
         }
         Column(
             modifier = Modifier.padding(start = 24.dp, top = 102.dp, end = 24.dp),
