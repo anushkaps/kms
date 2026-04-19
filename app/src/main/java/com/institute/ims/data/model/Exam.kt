@@ -19,4 +19,12 @@ data class Exam(
     val passingGradeLabel: String? = null,
     val customSchemeName: String? = null,
     val customCriteriaSummary: String? = null,
-)
+) {
+    /** Returns a published copy when current status is draft; otherwise returns this exam unchanged. */
+    fun publish(): Exam =
+        if (status == ExamStatus.DRAFT) {
+            copy(status = ExamStatus.PUBLISHED)
+        } else {
+            this
+        }
+}

@@ -27,6 +27,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +62,7 @@ fun StudentProfileScreen(
         student != null -> StudentProfileBody(
             student = student,
             batchDisplay = state.batchDisplay,
+            examParticipations = state.examParticipations,
             onBack = onBack,
             modifier = modifier,
         )
@@ -96,9 +100,12 @@ private fun StudentNotFoundBody(studentId: String, modifier: Modifier = Modifier
 private fun StudentProfileBody(
     student: Student,
     batchDisplay: String?,
+    examParticipations: List<StudentExamParticipation>,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -107,36 +114,63 @@ private fun StudentProfileBody(
         contentPadding = PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        item { ProfileHeader(student = student, batchDisplay = batchDisplay, onBack = onBack) }
         item {
-            ProfileSectionCard(
-                title = "ACADEMIC STATUS",
-                rows = listOf(
-                    "Programme" to student.courseLabel,
-                    "Semester" to semesterFromAcademicYear(student.academicYearLabel),
-                    "CGPA" to cgpaFromStudent(student),
-                    "Status" to if (student.status == StudentStatus.CURRENT) "Enrolled" else "Former",
-                ),
+            ProfileHeader(student = student, batchDisplay = batchDisplay, onBack = onBack)
+            ProfileTabs(
+                selectedTabIndex = selectedTabIndex,
+                onSelectTab = { selectedTabIndex = it },
             )
         }
-        item {
-            ProfileSectionCard(
-                title = "IDENTITY",
-                rows = listOf(
-                    "DOB" to "12 Mar 2003",
-                    "Gender" to inferredGender(student),
-                    "Category" to student.category,
-                ),
-            )
-        }
-        item {
-            ProfileSectionCard(
-                title = "GUARDIAN",
-                rows = listOf(
-                    "Name" to (student.guardianName ?: "Not Available"),
-                    "Contact" to student.phone,
-                ),
-            )
+
+        when (selectedTabIndex) {
+            0 -> {
+                item {
+                    ProfileSectionCard(
+                        title = "ACADEMIC STATUS",
+                        rows = listOf(
+                            "Programme" to student.courseLabel,
+                            "Semester" to semesterFromAcademicYear(student.academicYearLabel),
+                            "CGPA" to cgpaFromStudent(student),
+                            "Status" to if (student.status == StudentStatus.CURRENT) "Enrolled" else "Former",
+                        ),
+                    )
+                }
+                item {
+                    ProfileSectionCard(
+                        title = "IDENTITY",
+                        rows = listOf(
+                            "DOB" to "12 Mar 2003",
+                            "Gender" to inferredGender(student),
+                            "Category" to student.category,
+                        ),
+                    )
+                }
+                item {
+                    ProfileSectionCard(
+                        title = "GUARDIAN",
+                        rows = listOf(
+                            "Name" to (student.guardianName ?: "Not Available"),
+                            "Contact" to student.phone,
+                        ),
+                    )
+                }
+            }
+            1 -> {
+                item {
+                    StudentExamParticipationCard(exams = examParticipations)
+                }
+            }
+            else -> {
+                item {
+                    ProfileSectionCard(
+                        title = "NOTES",
+                        rows = listOf(
+                            "Status" to "No notes available",
+                            "Hint" to "Notes tab is ready for integration",
+                        ),
+                    )
+                }
+            }
         }
     }
 }
@@ -218,12 +252,14 @@ private fun ProfileHeader(
                 }
             }
         }
-        ProfileTabs()
     }
 }
 
 @Composable
-private fun ProfileTabs() {
+private fun ProfileTabs(
+    selectedTabIndex: Int,
+    onSelectTab: (Int) -> Unit,
+) {
     val tabs = listOf("Overview", "Exams", "Notes")
     Row(
         modifier = Modifier
@@ -232,7 +268,7 @@ private fun ProfileTabs() {
             .background(Color(0xFF0B6348)),
     ) {
         tabs.forEachIndexed { index, label ->
-            val isActive = index == 0
+            val isActive = index == selectedTabIndex
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -241,6 +277,7 @@ private fun ProfileTabs() {
                         if (isActive) Color.White.copy(alpha = 0.15f)
                         else Color.Transparent
                     )
+                    .clickable { onSelectTab(index) }
                     .then(
                         if (isActive) Modifier.background(Color.White.copy(alpha = 0.15f))
                         else Modifier,
@@ -261,6 +298,75 @@ private fun ProfileTabs() {
                             .align(Alignment.BottomCenter)
                             .background(Color.White),
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StudentExamParticipationCard(exams: List<StudentExamParticipation>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
+    ) {
+        Column(modifier = Modifier.padding(top = 12.dp, bottom = 10.dp)) {
+            Text(
+                text = "EXAM PARTICIPATION",
+                color = Color(0xFF0F7A5A),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            HorizontalDivider(color = Color(0xFFEEECE5), modifier = Modifier.padding(top = 6.dp))
+
+            if (exams.isEmpty()) {
+                Text(
+                    text = "No participated exams found for this student.",
+                    color = Color(0xFF6E6A62),
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            } else {
+                exams.forEachIndexed { index, exam ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = exam.examTitle,
+                                color = Color(0xFF1A1814),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = "${exam.examType} · ${exam.scheduleLabel}",
+                                color = Color(0xFF6E6A62),
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            text = "${"%.1f".format(exam.score)}${exam.gradeLabel?.let { " · $it" } ?: ""}",
+                            color = Color(0xFF1A1814),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    if (index < exams.lastIndex) {
+                        HorizontalDivider(color = Color(0xFFEEECE5))
+                    }
                 }
             }
         }

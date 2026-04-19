@@ -12,4 +12,5 @@ interface ExamRepository {
     fun getExam(examId: String): Exam?
     fun getResultsForExam(examId: String): List<ExamResult>
     fun addExam(exam: Exam)
+    fun publishExam(examId: String): Exam?
 }

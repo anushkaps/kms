@@ -18,6 +18,15 @@ class ExamDetailViewModel(
     val uiState: StateFlow<ExamDetailUiState> = _uiState.asStateFlow()
 
     init {
+        loadExam()
+    }
+
+    fun publishExam() {
+        repository.publishExam(examId)
+        loadExam()
+    }
+
+    private fun loadExam() {
         val exam = repository.getExam(examId)
         if (exam == null) {
             _uiState.update { it.copy(notFound = true) }

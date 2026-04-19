@@ -107,12 +107,7 @@ object FakeDashboardRepository : DashboardRepository {
     override fun getOverviewLine(role: UserRole): String {
         val today = LocalDate.now(ZoneId.systemDefault())
         val fmt = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.getDefault())
-        return when (role) {
-            UserRole.ADMIN -> today.format(fmt)
-            UserRole.FACULTY -> "Today: ${draftExamCount()} grading queue item(s) · ${
-                publishedExamCount()
-            } published paper(s). · ${today.format(fmt)}"
-        }
+        return today.format(fmt)
     }
 
     override fun getCapabilityHighlights(): List<DashboardCapabilityHighlight> = listOf(
