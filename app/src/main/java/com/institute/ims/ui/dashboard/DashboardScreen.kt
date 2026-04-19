@@ -148,8 +148,8 @@ fun DashboardScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
+                    start = 0.dp,
+                    end = 0.dp,
                     top = 0.dp,
                     bottom = 28.dp,
                 ),
@@ -160,7 +160,7 @@ fun DashboardScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(156.dp),
+                                .height(178.dp),
                         ) {
                             DashboardHeader(
                                 displayName = uiState.displayName,
@@ -179,6 +179,7 @@ fun DashboardScreen(
                             ) {
                                 Surface(
                                     modifier = Modifier
+                                        .padding(horizontal = 16.dp)
                                         .fillMaxWidth()
                                         .height(52.dp)
                                         .clickable { onOpenSearch() },
@@ -226,6 +227,7 @@ fun DashboardScreen(
 
                 item {
                     TodayRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         overviewLine = uiState.overviewLine,
                         onClick = { viewModel.refreshHubSummary() },
                     )
@@ -237,12 +239,15 @@ fun DashboardScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFF6E6A62),
                         fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
 
                 item {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         val studentsModule = uiState.modules.firstOrNull { it.id.name == "STUDENTS" }
@@ -284,6 +289,7 @@ fun DashboardScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                             .padding(top = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
@@ -306,6 +312,7 @@ fun DashboardScreen(
 
                 item {
                     DashboardNewsCard(
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         newsItems = displayedNews.take(4),
                         onNewsClick = { item -> selectedNewsDetail = item },
                     )
@@ -740,9 +747,10 @@ internal fun HubSearchSuggestionsCard(
 private fun TodayRow(
     overviewLine: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
@@ -849,9 +857,10 @@ private fun ModuleTileCard(
 private fun DashboardNewsCard(
     newsItems: List<NewsItem>,
     onNewsClick: (NewsItem) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
@@ -929,7 +938,7 @@ private fun DashboardHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(136.dp)
+            .height(158.dp)
             .background(LedgerPalette.Ink),
     ) {
         Row(
@@ -986,7 +995,7 @@ private fun DashboardHeader(
             )
         }
         Column(
-            modifier = Modifier.padding(start = 24.dp, top = 62.dp, end = 24.dp),
+            modifier = Modifier.padding(start = 24.dp, top = 72.dp, end = 24.dp),
         ) {
             Text(
                 text = timeOfDayGreeting.ifBlank { "Good morning." },
