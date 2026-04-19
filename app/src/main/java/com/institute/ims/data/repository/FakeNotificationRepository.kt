@@ -42,6 +42,8 @@ object FakeNotificationRepository {
 
     fun hasUnread(): Boolean = seed.any { it.id !in _readIds.value }
 
+    fun unreadCount(): Int = seed.count { it.id !in _readIds.value }
+
     fun markRead(id: String) {
         _readIds.update { it + id }
     }

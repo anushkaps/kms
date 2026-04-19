@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.institute.ims.data.catalog.RegionalCatalog
 import com.institute.ims.data.model.DashboardModuleId
+import com.institute.ims.data.model.ExamStatus
 import com.institute.ims.data.model.StudentFilterCriteria
 import com.institute.ims.data.model.UserRole
 import com.institute.ims.data.repository.DashboardRepository
@@ -60,6 +61,10 @@ class DashboardViewModel(
                         FakeRegionalPreferencesRepository.prefsFlow.value,
                     ),
                     hasUnreadNotifications = FakeNotificationRepository.hasUnread(),
+                    activeExamCount = activeExamCount(),
+                    unreadNoticeCount = FakeNotificationRepository.unreadCount(),
+                    pendingGradeReviewCount = draftExamCount(),
+                    examDraftApprovalCount = draftExamCount(),
                 )
             }
         }
@@ -73,7 +78,10 @@ class DashboardViewModel(
         viewModelScope.launch {
             FakeNotificationRepository.readIds.collectLatest {
                 _uiState.update { s ->
-                    s.copy(hasUnreadNotifications = FakeNotificationRepository.hasUnread())
+                    s.copy(
+                        hasUnreadNotifications = FakeNotificationRepository.hasUnread(),
+                        unreadNoticeCount = FakeNotificationRepository.unreadCount(),
+                    )
                 }
             }
         }
@@ -88,9 +96,19 @@ class DashboardViewModel(
                 modules = dashboardRepository.getModuleCards(),
                 overviewLine = dashboardRepository.getOverviewLine(user.role),
                 timeOfDayGreeting = timeOfDayGreeting(),
+                activeExamCount = activeExamCount(),
+                unreadNoticeCount = FakeNotificationRepository.unreadCount(),
+                pendingGradeReviewCount = draftExamCount(),
+                examDraftApprovalCount = draftExamCount(),
             )
         }
     }
+
+    private fun activeExamCount(): Int =
+        examRepository.getExams().count { it.status != ExamStatus.COMPLETED }
+
+    private fun draftExamCount(): Int =
+        examRepository.getExams().count { it.status == ExamStatus.DRAFT }
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { s ->

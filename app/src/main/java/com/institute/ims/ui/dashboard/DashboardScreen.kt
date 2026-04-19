@@ -234,6 +234,31 @@ fun DashboardScreen(
                 }
 
                 item {
+                    FocusActionsCard(
+                        role = uiState.role,
+                        activeExamCount = uiState.activeExamCount,
+                        unreadNoticeCount = uiState.unreadNoticeCount,
+                        pendingGradeReviewCount = uiState.pendingGradeReviewCount,
+                        examDraftApprovalCount = uiState.examDraftApprovalCount,
+                        onPrimaryAction = {
+                            if (uiState.role == UserRole.FACULTY) {
+                                showNotificationsSheet = true
+                            } else {
+                                onOpenExams()
+                            }
+                        },
+                        onSecondaryAction = {
+                            if (uiState.role == UserRole.ADMIN) {
+                                showNotificationsSheet = true
+                            } else {
+                                onOpenExams()
+                            }
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+
+                item {
                     Text(
                         text = "MODULES",
                         style = MaterialTheme.typography.labelSmall,
@@ -773,6 +798,139 @@ private fun TodayRow(
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF6E6A62),
         )
+    }
+}
+
+@Composable
+private fun FocusActionsCard(
+    role: UserRole?,
+    activeExamCount: Int,
+    unreadNoticeCount: Int,
+    pendingGradeReviewCount: Int,
+    examDraftApprovalCount: Int,
+    onPrimaryAction: () -> Unit,
+    onSecondaryAction: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val (primaryTitle, primarySubtitle, primaryIcon) = when (role) {
+        UserRole.ADMIN -> Triple(
+            "$activeExamCount active exam(s)",
+            "Track schedules and publishing status",
+            Icons.Outlined.Schedule,
+        )
+        UserRole.FACULTY -> Triple(
+            "Review $pendingGradeReviewCount pending grade(s)",
+            "Open the grading queue",
+            Icons.Outlined.EditNote,
+        )
+        else -> Triple(
+            "$activeExamCount active exam(s)",
+            "Open examinations",
+            Icons.Outlined.Schedule,
+        )
+    }
+    val (secondaryTitle, secondarySubtitle, secondaryIcon) = when (role) {
+        UserRole.ADMIN -> Triple(
+            "$unreadNoticeCount unread notice(s)",
+            "Check institute alerts and reminders",
+            Icons.Outlined.Newspaper,
+        )
+        UserRole.FACULTY -> Triple(
+            "Approve $examDraftApprovalCount exam draft(s)",
+            "Publish or revise draft papers",
+            Icons.Outlined.HourglassTop,
+        )
+        else -> Triple(
+            "$unreadNoticeCount unread notice(s)",
+            "Check latest notifications",
+            Icons.Outlined.Newspaper,
+        )
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "FOCUS",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF6E6A62),
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        FocusActionRow(
+            icon = primaryIcon,
+            title = primaryTitle,
+            subtitle = primarySubtitle,
+            onClick = onPrimaryAction,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        FocusActionRow(
+            icon = secondaryIcon,
+            title = secondaryTitle,
+            subtitle = secondarySubtitle,
+            onClick = onSecondaryAction,
+        )
+    }
+}
+
+@Composable
+private fun FocusActionRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE4DFD6)),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFFF2F4FA)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = LedgerPalette.Cobalt,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF22211D),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF6E6A62),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+                contentDescription = null,
+                tint = Color(0xFFB1ADA5),
+                modifier = Modifier.size(16.dp),
+            )
+        }
     }
 }
 
