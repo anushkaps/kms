@@ -26,4 +26,8 @@ data class DashboardUiState(
     val news: List<NewsItem> = emptyList(),
     val overviewLine: String = "",
     val regionalSummaryLine: String = "",
+    val activeExamCount: Int = 0,
+    val unreadNoticeCount: Int = 0,
+    val pendingGradeReviewCount: Int = 0,
+    val examDraftApprovalCount: Int = 0,
 )
