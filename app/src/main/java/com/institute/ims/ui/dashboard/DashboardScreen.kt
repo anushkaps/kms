@@ -148,8 +148,8 @@ fun DashboardScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    start = 24.dp,
-                    end = 24.dp,
+                    start = 16.dp,
+                    end = 16.dp,
                     top = 0.dp,
                     bottom = 28.dp,
                 ),
@@ -180,16 +180,16 @@ fun DashboardScreen(
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(44.dp)
+                                        .height(52.dp)
                                         .clickable { onOpenSearch() },
-                                    shape = RoundedCornerShape(22.dp),
+                                    shape = RoundedCornerShape(26.dp),
                                     color = Color.White,
                                     border = BorderStroke(1.dp, Color(0xFFD4CFC5)),
                                 ) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 12.dp),
+                                            .padding(horizontal = 16.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
@@ -197,11 +197,11 @@ fun DashboardScreen(
                                             imageVector = Icons.Outlined.Search,
                                             contentDescription = null,
                                             tint = Color(0xFFD4CFC5),
-                                            modifier = Modifier.size(16.dp),
+                                            modifier = Modifier.size(18.dp),
                                         )
                                         Text(
                                             text = "Search students, exams, news...",
-                                            fontSize = 13.sp,
+                                            fontSize = 14.sp,
                                             color = Color(0xFF888780),
                                             modifier = Modifier.weight(1f),
                                         )
