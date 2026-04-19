@@ -67,11 +67,11 @@ object FakeExamRepository : ExamRepository {
         ),
         Exam(
             id = "exam-004",
-            title = "Database Systems - Viva",
+            title = "Data Systems - Viva",
             examType = "Viva",
             batchId = "batch-2024",
             batchLabel = "Computer Science 2024 (CS-24)",
-            subjectName = "Database Management Systems",
+            subjectName = "Data Systems",
             maxScore = 30.0,
             groupId = "grp-spring",
             evaluationType = EvaluationType.CWA,
@@ -79,7 +79,7 @@ object FakeExamRepository : ExamRepository {
             status = ExamStatus.PUBLISHED,
             assessmentMode = AssessmentMode.CUSTOM,
             customSchemeName = "Viva rubric",
-            customCriteriaSummary = "Oral defense checklist; qualitative merit bands.",
+            customCriteriaSummary = "Oral defence criteria; qualitative merit bands.",
         ),
     )
 
@@ -97,12 +97,18 @@ object FakeExamRepository : ExamRepository {
                 resultRow(ex("exam-001"), "stu-001", "Ananya Iyer", "CS24-001", 44.0),
                 resultRow(ex("exam-001"), "stu-002", "Rahul Verma", "CS24-014", 38.5),
                 resultRow(ex("exam-001"), "stu-009", "Aisha Patel", "CS24-019", 41.0),
-                resultRow(ex("exam-002"), "stu-005", "Priya Nair", "CS23-108", 17.0),
-                resultRow(ex("exam-002"), "stu-006", "Vikram Singh", "CS23-045", 14.5),
                 resultRow(ex("exam-003"), "stu-001", "Ananya Iyer", "CS24-001", 86.0),
                 resultRow(ex("exam-003"), "stu-002", "Rahul Verma", "CS24-014", 79.0),
                 resultRow(ex("exam-003"), "stu-004", "Jordan Smith", "CS24-031", 91.0),
                 resultRow(ex("exam-003"), "stu-009", "Aisha Patel", "CS24-019", 88.5),
+                resultRow(ex("exam-004"), "stu-001", "Ananya Iyer", "CS24-001", 28.0),
+                resultRow(ex("exam-004"), "stu-002", "Rahul Verma", "CS24-014", 25.5),
+                resultRow(ex("exam-004"), "stu-003", "Mei Lin Chen", "CS24-022", 27.0),
+                resultRow(ex("exam-004"), "stu-004", "Jordan Smith", "CS24-031", 24.5),
+                resultRow(ex("exam-004"), "stu-005", "Priya Nair", "CS23-108", 29.0),
+                resultRow(ex("exam-004"), "stu-006", "Vikram Singh", "CS23-045", 22.0),
+                resultRow(ex("exam-004"), "stu-007", "Sara Khan", "CS23-067", 26.5),
+                resultRow(ex("exam-004"), "stu-009", "Aisha Patel", "CS24-019", 30.0),
             ),
         )
     }
@@ -133,11 +139,34 @@ object FakeExamRepository : ExamRepository {
 
     override fun getExam(examId: String): Exam? = exams.find { it.id == examId }
 
-    override fun getResultsForExam(examId: String): List<ExamResult> =
-        results.filter { it.examId == examId }.sortedBy { it.studentName.lowercase() }
+    override fun getResultsForExam(examId: String): List<ExamResult> {
+        val exam = getExam(examId) ?: return emptyList()
+        if (exam.status == ExamStatus.DRAFT) return emptyList()
+        return results
+            .filter { it.examId == examId }
+            .map { row ->
+                row.copy(
+                    gradeLabel = ExamGradeFormatter.label(
+                        score = row.score,
+                        maxScore = exam.maxScore,
+                        evaluationType = exam.evaluationType,
+                    ),
+                )
+            }
+            .sortedBy { it.studentName.lowercase() }
+    }
 
     override fun addExam(exam: Exam) {
         exams.add(exam)
         catalogSignal.tryEmit(Unit)
+    }
+
+    override fun publishExam(examId: String): Exam? {
+        val index = exams.indexOfFirst { it.id == examId }
+        if (index == -1) return null
+        val updated = exams[index].publish()
+        exams[index] = updated
+        catalogSignal.tryEmit(Unit)
+        return updated
     }
 }

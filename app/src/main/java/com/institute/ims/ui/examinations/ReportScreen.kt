@@ -3,6 +3,7 @@ package com.institute.ims.ui.examinations
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -119,46 +121,16 @@ private fun ReportHeader(
         ) {
             Box(
                 modifier = Modifier
-                    .width(100.dp)
+                    .width(88.dp)
                     .height(26.dp)
                     .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = exam?.assessmentMode?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Automated",
+                    text = exam?.assessmentMode?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Mode",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .width(44.dp)
-                    .height(26.dp)
-                    .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "Quick",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.55f),
-                    textAlign = TextAlign.Center,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .width(44.dp)
-                    .height(26.dp)
-                    .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "Detail",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.55f),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -255,7 +227,6 @@ private fun ReportBody(
             item {
                 TopResultsCard(
                     results = topResults,
-                    exam = exam,
                     modifier = Modifier.padding(horizontal = 24.dp),
                 )
             }
@@ -418,22 +389,12 @@ private fun StatMiniCard(
 
 @Composable
 private fun GradeDistributionCard(analytics: ExamAnalytics, exam: Exam, modifier: Modifier = Modifier) {
-    val (title, bars) = when (exam.assessmentMode) {
-        AssessmentMode.MARKS -> {
-            val bs = analytics.buckets.map { it.label to it.count }
-            "Score bands · % of max" to if (bs.isNotEmpty()) bs else ExamAnalyticsCalculator.emptyDistributionPreview().map { it.label to it.count }
-        }
-        AssessmentMode.GRADE_BASED -> {
-            val g = analytics.gradeBreakdown.take(6)
-            "Grade distribution · ${exam.evaluationType.name}" to if (g.isNotEmpty()) g else listOf("—" to 0)
-        }
-        AssessmentMode.CUSTOM -> {
-            val bs = analytics.buckets.map { it.label to it.count }
-            val fallback = analytics.gradeBreakdown.take(6)
-            "Rubric spread · % of cap" to if (bs.isNotEmpty()) bs else if (fallback.isNotEmpty()) fallback else listOf("—" to 0)
-        }
-    }
+    val orderedGrades = listOf("A", "A-", "B", "B-", "C", "C-", "F")
+    val breakdown = analytics.gradeBreakdown.toMap()
+    val title = "Grade distribution"
+    val bars = orderedGrades.map { grade -> grade to (breakdown[grade] ?: 0) }
     val maxCount = bars.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+    val shouldScrollBuckets = bars.size > 7
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -454,21 +415,27 @@ private fun GradeDistributionCard(analytics: ExamAnalytics, exam: Exam, modifier
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(96.dp),
+                    .height(128.dp)
+                    .then(
+                        if (shouldScrollBuckets) {
+                            Modifier.horizontalScroll(rememberScrollState())
+                        } else {
+                            Modifier
+                        },
+                    ),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 bars.forEachIndexed { index, (label, count) ->
                     val ratio = count.toFloat() / maxCount.toFloat()
-                    val isLast = index == bars.lastIndex
-                    val barColor = if (isLast && exam.assessmentMode == AssessmentMode.MARKS) {
-                        Color(0xFFD4CFC5)
-                    } else {
-                        LedgerPalette.Plum.copy(alpha = (1.0f - index * 0.16f).coerceIn(0.2f, 1.0f))
-                    }
+                    val barColor = LedgerPalette.Plum.copy(alpha = (1.0f - index * 0.10f).coerceIn(0.35f, 1.0f))
                     val barHeight = (68.dp * ratio).coerceAtLeast(4.dp)
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = if (shouldScrollBuckets) {
+                            Modifier.width(72.dp)
+                        } else {
+                            Modifier.weight(1f)
+                        },
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Bottom,
                     ) {
@@ -490,8 +457,10 @@ private fun GradeDistributionCard(analytics: ExamAnalytics, exam: Exam, modifier
                             text = label,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            maxLines = if (shouldScrollBuckets) 2 else 1,
+                            minLines = if (shouldScrollBuckets) 2 else 1,
+                            overflow = if (shouldScrollBuckets) TextOverflow.Clip else TextOverflow.Ellipsis,
+                            softWrap = shouldScrollBuckets,
                             textAlign = TextAlign.Center,
                             color = Color(0xFF6E6A62),
                         )
@@ -503,7 +472,7 @@ private fun GradeDistributionCard(analytics: ExamAnalytics, exam: Exam, modifier
 }
 
 @Composable
-private fun TopResultsCard(results: List<ExamResult>, exam: Exam, modifier: Modifier = Modifier) {
+private fun TopResultsCard(results: List<ExamResult>, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -549,12 +518,12 @@ private fun TopResultsCard(results: List<ExamResult>, exam: Exam, modifier: Modi
                         )
                     }
                     Text(
-                        text = row.score.toInt().toString(),
+                        text = ExamAnalyticsCalculator.formatOneDecimal(row.score),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF1A1814),
                         textAlign = TextAlign.End,
-                        modifier = Modifier.width(36.dp),
+                        modifier = Modifier.width(44.dp),
                     )
                     Spacer(Modifier.width(4.dp))
                     GradePill(grade = row.gradeLabel)

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.AssessmentMode
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamResult
+import com.institute.ims.data.model.ExamStatus
 import com.institute.ims.data.model.uiLabel
 import com.institute.ims.ui.common.LedgerPalette
 import com.institute.ims.utils.ExamAnalyticsCalculator
@@ -77,6 +79,7 @@ fun ExamDetailScreen(
                 results = state.results,
                 onBack = onBack,
                 onOpenReport = onOpenReport,
+                onPublishExam = { viewModel.publishExam() },
                 modifier = Modifier.padding(innerPadding),
             )
             else -> Spacer(modifier = Modifier.padding(innerPadding))
@@ -117,6 +120,7 @@ private fun ExamDetailBody(
     results: List<ExamResult>,
     onBack: () -> Unit,
     onOpenReport: () -> Unit,
+    onPublishExam: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -148,7 +152,9 @@ private fun ExamDetailBody(
         }
         item {
             OutlinedButton(
-                onClick = {},
+                onClick = {
+                    if (exam.status == ExamStatus.DRAFT) onPublishExam()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
@@ -158,7 +164,7 @@ private fun ExamDetailBody(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = LedgerPalette.Plum),
             ) {
                 Text(
-                    text = "Add Demo Results",
+                    text = if (exam.status == ExamStatus.DRAFT) "Publish Exam" else "Add Demo Results",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                 )
@@ -177,63 +183,60 @@ private fun SummaryHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(186.dp)
+            .heightIn(min = 232.dp)
             .background(LedgerPalette.Plum),
     ) {
-        // Back nav
-        Text(
-            text = "< Examinations",
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 11.sp,
-            lineHeight = 13.sp,
+        Column(
             modifier = Modifier
-                .padding(start = 24.dp, top = 8.dp)
-                .clickable(onClick = onBack),
-        )
-        // Title
-        Text(
-            text = exam.title,
-            color = Color.White,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 20.sp,
-            lineHeight = 24.sp,
-            modifier = Modifier.padding(start = 24.dp, top = 28.dp, end = 88.dp),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        // Meta (group · batch)
-        Text(
-            text = "${groupName ?: exam.groupId} · ${exam.batchLabel}",
-            color = Color.White.copy(alpha = 0.65f),
-            fontSize = 12.sp,
-            lineHeight = 15.sp,
-            modifier = Modifier.padding(start = 24.dp, top = 58.dp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        // Badges row
-        Row(
-            modifier = Modifier.padding(start = 24.dp, top = 84.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            HeaderChip(exam.scheduleLabel)
-            HeaderChip(exam.assessmentMode.uiLabel())
-            HeaderChip(exam.evaluationType.name)
-        }
-        // Divider 1
-        Box(
-            modifier = Modifier
-                .padding(start = 24.dp, end = 24.dp, top = 120.dp)
                 .fillMaxWidth()
-                .height(1.dp)
-                .background(Color.White),
-        )
-        // Stats row
-        Row(
-            modifier = Modifier
-                .padding(start = 24.dp, end = 24.dp, top = 130.dp)
-                .fillMaxWidth(),
+                .padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 12.dp),
         ) {
+            Text(
+                text = "< Examinations",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
+                modifier = Modifier.clickable(onClick = onBack),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = exam.title,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 20.sp,
+                lineHeight = 24.sp,
+                modifier = Modifier.padding(end = 48.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${groupName ?: exam.groupId} · ${exam.batchLabel}",
+                color = Color.White.copy(alpha = 0.65f),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                HeaderChip(exam.scheduleLabel)
+                HeaderChip(exam.assessmentMode.uiLabel())
+                HeaderChip(exam.evaluationType.name)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color.White),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
             when (exam.assessmentMode) {
                 AssessmentMode.MARKS -> {
                     val passLine = exam.passMarksThreshold?.toInt()
@@ -288,15 +291,15 @@ private fun SummaryHeader(
                 label = "Results",
                 modifier = Modifier.weight(1f),
             )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color.White),
+            )
         }
-        // Divider 2
-        Box(
-            modifier = Modifier
-                .padding(start = 24.dp, end = 24.dp, top = 174.dp)
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(Color.White),
-        )
     }
 }
 

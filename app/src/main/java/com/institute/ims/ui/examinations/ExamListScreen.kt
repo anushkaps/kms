@@ -55,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.institute.ims.data.model.EvaluationType
 import com.institute.ims.data.model.Exam
 import com.institute.ims.data.model.ExamGroup
+import com.institute.ims.data.model.ExamStatus
 import com.institute.ims.ui.common.LedgerPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -380,7 +381,7 @@ private fun ExamRow(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top,
     ) {
@@ -408,7 +409,34 @@ private fun ExamRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        EvalBadge(type = exam.evaluationType)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            StatusBadge(status = exam.status)
+            EvalBadge(type = exam.evaluationType)
+        }
+    }
+}
+
+@Composable
+private fun StatusBadge(status: ExamStatus) {
+    val colorsAndLabel = when (status) {
+        ExamStatus.DRAFT -> (Color(0xFFFFF3E7) to Color(0xFFB85C00)) to "DRAFT"
+        ExamStatus.PUBLISHED -> (Color(0xFFEAF3FF) to LedgerPalette.Cobalt) to "LIVE"
+        ExamStatus.COMPLETED -> (Color(0xFFECEBE8) to Color(0xFF6E6A62)) to "DONE"
+    }
+    val (colors, label) = colorsAndLabel
+    val (bg, fg) = colors
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = bg,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            color = fg,
+            maxLines = 1,
+        )
     }
 }
 
