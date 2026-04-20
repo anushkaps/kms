@@ -6,43 +6,28 @@
 local.properties
 
 # Android Studio / IntelliJ
+.idea/
 *.iml
-.idea/caches/
-.idea/libraries/
-.idea/modules.xml
-.idea/navEditor.xml
-.idea/assetWizardSettings.xml
-.idea/inspectionProfiles/
-.idea/deploymentTargetSelector.xml
-.idea/appInsightsSettings.xml
 *.ipr
 *.iws
-
-# Kotlin
-.kotlin/
-
-# NDK / CMake
+.android/
 .externalNativeBuild/
 .cxx/
 
-# Outputs & packaging
+# Build outputs
 *.apk
 *.aar
-*.ap_
-*.dex
 *.class
-
-# Signing (do not commit secrets)
+*.jar
+*.dex
+*.ap_
 *.jks
 *.keystore
 
 # Logs & temp
 *.log
-*.tmp
-*.temp
 captures/
 
 # OS
 .DS_Store
 Thumbs.db
-Desktop.ini
