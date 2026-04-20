@@ -333,7 +333,7 @@ class DashboardViewModel(
             UserRole.ADMIN -> "Here is your institute overview"
             UserRole.FACULTY -> "Here is your teaching workspace"
         }
-        return "Hello, $first — $tone."
+        return "Hello, $first - $tone."
     }
 
     class Factory(

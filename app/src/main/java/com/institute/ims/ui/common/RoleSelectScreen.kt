@@ -63,7 +63,8 @@ fun RoleSelectScreen(
                 .background(Color(0xFF1A1814)),
         ) {
             Text(
-                text = "LEDGER IMS · Demo Mode",
+
+                text = "IMS Demo Mode",
                 color = Color(0xFF6E6A62),
                 fontWeight = FontWeight.W500,
                 fontSize = 10.sp,
@@ -128,7 +129,7 @@ fun RoleSelectScreen(
                 shape = RoundedCornerShape(8.dp),
             ) {
                 Text(
-                    text = "Demo mode — no credentials required. Local data only.",
+                    text = "Demo mode - no credentials required. Local data only.",
                     color = Color(0xFFB85C00),
                     fontWeight = FontWeight.W400,
                     fontSize = 11.sp,
@@ -280,6 +281,6 @@ private fun FacultyGlyph() {
 }
 
 private fun roleEntryLabel(user: User): String = when (user.role) {
-    UserRole.ADMIN -> "Enter as Institute Admin →"
+    UserRole.ADMIN -> "Enter as Admin →"
     UserRole.FACULTY -> "Enter as Faculty Member →"
 }

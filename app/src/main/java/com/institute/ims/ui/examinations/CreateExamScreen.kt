@@ -113,7 +113,7 @@ fun CreateExamScreen(
                         label = "Exam name",
                         value = state.title,
                         onValueChange = viewModel::onTitleChange,
-                        placeholder = "e.g. Data Structures — Final",
+                        placeholder = "e.g. Data Structures - Final",
                     )
 
                     ExposedDropdownMenuBox(

@@ -1300,7 +1300,7 @@ private fun formatNewsDate(epochMs: Long): String {
 }
 
 private fun roleLabel(role: UserRole): String = when (role) {
-    UserRole.ADMIN -> "Institute Admin"
+    UserRole.ADMIN -> "Admin"
     UserRole.FACULTY -> "Faculty Member"
 }
 

@@ -258,13 +258,13 @@ private fun CustomExamSummaryCard(exam: Exam) {
                 color = LedgerPalette.Amber,
             )
             Text(
-                text = exam.customSchemeName ?: "—",
+                text = exam.customSchemeName ?: "-",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF1A1814),
             )
             Text(
-                text = exam.customCriteriaSummary ?: "—",
+                text = exam.customCriteriaSummary ?: "-",
                 fontSize = 11.sp,
                 color = Color(0xFF6E6A62),
             )
@@ -535,7 +535,7 @@ private fun TopResultsCard(results: List<ExamResult>, modifier: Modifier = Modif
 
 @Composable
 private fun GradePill(grade: String?) {
-    val label = grade ?: "—"
+    val label = grade ?: "-"
     val isGood = label == "A" || label == "A+" || label == "O" || label == "Advanced" || label == "Proficient"
     val (bg, fg) = if (isGood) {
         Color(0xFFEAF4EF) to LedgerPalette.Forest
