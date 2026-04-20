@@ -256,14 +256,14 @@ private fun SummaryHeader(
                 }
                 AssessmentMode.GRADE_BASED -> {
                     HeaderStat(
-                        value = exam.gradeSchemeName ?: "—",
+                        value = exam.gradeSchemeName ?: "-",
                         label = "Grade scheme",
                         modifier = Modifier.weight(1f),
                         valueMaxLines = 2,
                     )
                     HeaderDivider()
                     HeaderStat(
-                        value = exam.passingGradeLabel ?: "—",
+                        value = exam.passingGradeLabel ?: "-",
                         label = "Passing grade",
                         modifier = Modifier.weight(1f),
                     )
@@ -271,14 +271,14 @@ private fun SummaryHeader(
                 }
                 AssessmentMode.CUSTOM -> {
                     HeaderStat(
-                        value = exam.customSchemeName ?: "—",
+                        value = exam.customSchemeName ?: "-",
                         label = "Custom scheme",
                         modifier = Modifier.weight(1f),
                         valueMaxLines = 2,
                     )
                     HeaderDivider()
                     HeaderStat(
-                        value = exam.customCriteriaSummary ?: "—",
+                        value = exam.customCriteriaSummary ?: "-",
                         label = "Criteria",
                         modifier = Modifier.weight(1f),
                         valueMaxLines = 2,
@@ -395,15 +395,15 @@ private fun ExamDetailCard(
                     HorizontalDivider(color = Color(0xFFEEECE5))
                 }
                 AssessmentMode.GRADE_BASED -> {
-                    DetailLine("Grade scheme", exam.gradeSchemeName ?: "—")
+                    DetailLine("Grade scheme", exam.gradeSchemeName ?: "-")
                     HorizontalDivider(color = Color(0xFFEEECE5))
-                    DetailLine("Passing grade", exam.passingGradeLabel ?: "—")
+                    DetailLine("Passing grade", exam.passingGradeLabel ?: "-")
                     HorizontalDivider(color = Color(0xFFEEECE5))
                 }
                 AssessmentMode.CUSTOM -> {
-                    DetailLine("Custom scheme", exam.customSchemeName ?: "—")
+                    DetailLine("Custom scheme", exam.customSchemeName ?: "-")
                     HorizontalDivider(color = Color(0xFFEEECE5))
-                    DetailLine("Criteria summary", exam.customCriteriaSummary ?: "—")
+                    DetailLine("Criteria summary", exam.customCriteriaSummary ?: "-")
                     HorizontalDivider(color = Color(0xFFEEECE5))
                 }
             }
@@ -468,7 +468,7 @@ private fun ResultSectionCard(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "—",
+                            text = "-",
                             fontSize = 16.sp,
                             color = Color(0xFFD4CFC5),
                         )

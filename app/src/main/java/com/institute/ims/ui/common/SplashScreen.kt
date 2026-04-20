@@ -131,7 +131,7 @@ private fun IntroPageLedger() {
         Spacer(modifier = Modifier.height(200.dp))
         LedgerMark(modifier = Modifier.padding(top = 40.dp))
         Text(
-            text = "LEDGER",
+            text = "IMS",
             color = Color(0xFFF5F3EE),
             fontWeight = FontWeight.W600,
             fontSize = 32.sp,
@@ -142,7 +142,7 @@ private fun IntroPageLedger() {
                 .padding(top = 32.dp),
         )
         Text(
-            text = "INSTITUTE MANAGEMENT",
+            text = "INSTITUTE MANAGEMENT SYSTEM",
             color = Color(0xFF6E6A62),
             fontWeight = FontWeight.W500,
             fontSize = 11.sp,
@@ -160,7 +160,7 @@ private fun IntroPageLedger() {
                 .background(Color(0xFF3A3732)),
         )
         Text(
-            text = "St. Xavier's College of Engineering",
+            text = "IIIT Hyderabad",
             color = Color(0xFFD4CFC5),
             fontWeight = FontWeight.W400,
             fontSize = 13.sp,
@@ -192,7 +192,7 @@ private fun IntroPageFeatures() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Students, examinations, and institute news stay connected in a single ledger-inspired workspace.",
+            text = "Students, examinations, and institute news stay connected in a single IMS workspace.",
             color = Color(0xFFD4CFC5),
             fontWeight = FontWeight.W400,
             fontSize = 14.sp,
