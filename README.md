@@ -1,50 +1,45 @@
-# Institute IMS — DASS Assignment 3 (prototype)
+# Institute Management System
 
-Native Android prototype built in **Jetpack Compose** with **fake local data** (no backend).
+A native Android prototype for managing institute workflows, built with Kotlin and Jetpack Compose.
 
-## Selected modules
+The application includes a role-aware dashboard, searchable student records, examination creation and tracking, and visual performance analytics.
 
-1. **Dashboard** — role-aware hub with quick search, summary stats, module cards, latest news  
-2. **Student Details** — student directory with batch/status filters, advanced filters, profile drill-down  
-3. **Examinations** — exam list, create exam, exam detail/results, reports & analytics (stats + bucket bars)
+## Features
 
-## Tech stack
+### Dashboard
 
-- Kotlin, Jetpack Compose, Material 3, Navigation Compose  
-- ViewModel + StateFlow UI state  
-- No Room / Hilt / Koin / Dagger; no XML layouts for screens
+- Role-aware experience for Admin and Faculty users
+- Quick institute statistics
+- Search across students, examinations, and news
+- Navigation cards for major modules
+- Latest institute news and announcements
+- Clear empty and loading states
 
-## Architecture (short)
+### Student Details
 
-- `MainActivity` hosts `ImsNavHost` inside `ImsTheme`  
-- UI by feature under `app/src/main/java/com/institute/ims/ui/`  
-- Repositories are in-memory singletons (`Fake*Repository`) behind small interfaces in `data/repository/`  
-- Models in `data/model/`, helpers in `utils/`
+- Search students by name or roll number
+- Filter students by batch
+- Filter current and former students
+- Apply advanced filters
+- View detailed student profiles
+- Navigate between overview, examinations, and notes
+- Clear empty states when no records match
 
-## Implemented features by module
+### Examinations
 
-| Module | What works |
-|--------|------------|
-| Dashboard | Greeting header, role-aware quick stats, quick search, module entry points (Students/Exams), latest news list + search |
-| Student Details | Batch chips, status chips (current/former), advanced filters panel, search, clean empty states, open student profile |
-| Examinations | Group filter, exam cards with metadata, create exam flow, exam detail + results/empty state, report screen with avg/high/low/pass%, bucket-bar distribution, empty analytics handling |
+- Browse examinations grouped by assessment category
+- Search and filter examination records
+- Create new examinations
+- View examination details and metadata
+- Display student results
+- Handle examinations with no published results
+- Generate examination reports and analytics
+- View average, highest, lowest, and pass percentage
+- Visualize score distribution using bucket charts
 
-Seeded data includes an exam **without** results to demo empty report sections.
+## Screenshots
 
-## How to run
+Add emulator screenshots to the following directory:
 
-1. Open the project root in **Android Studio**.  
-2. Run the **`app`** configuration on an emulator/device (**minSdk 26**).  
-3. Build check: `./gradlew assembleDebug` (Windows: `gradlew.bat assembleDebug`).
-
-## Suggested viva walkthrough
-
-1. Splash → select user (Admin/Faculty) → Dashboard  
-2. Students → filter/search → open profile → back  
-3. Examinations → open an exam with results → Report → show stats + distribution  
-4. Open **Database Systems — Viva** (no results) → empty analytics + preview chart  
-5. Create new exam → save → verify it appears in the list
-
-## Fake repositories / no backend
-
-All domain data is stored in-memory in fake repositories for demo purposes (users, students, exams, news, dashboard stats). No REST API or database is used for these features.
+```text
+docs/screenshots/
