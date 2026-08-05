@@ -2,7 +2,22 @@
 
 A native Android Institute Management System built with **Kotlin** and **Jetpack Compose**.
 
-The app includes role-aware dashboards, student management, examination workflows, and performance analytics.
+The Institute Management System is a native Android application for managing students, examinations, and institute operations through separate Admin and Faculty workflows.
+
+
+## Screenshots
+
+| Dashboard | Student Management |
+|---|---|
+| ![Admin Dashboard](screenshots/Admin%20Dashboard%20-%20Full%20Page.png) | ![Students List](screenshots/Students%20List%20-%20Full%20Page.png) |
+
+| Examinations | Analytics |
+|---|---|
+| ![Examinations](screenshots/Examinations%20List.png) | ![Report Center](screenshots/Report%20Center%20-%20Full%20Page.png) |
+
+| Student Profile | Exam Results |
+|---|---|
+| ![Student Profile](screenshots/Student%20Profile%20-%20Leo%20Overview.png) | ![Exam Results](screenshots/Exam%20Detail%20-%20With%20Results.png) |
 
 ## Features
 
@@ -32,19 +47,6 @@ The app includes role-aware dashboards, student management, examination workflow
 - View average, highest, lowest, and pass percentage
 - Visualize score distribution
 
-## Screenshots
-
-| Dashboard | Student Management |
-|---|---|
-| ![Admin Dashboard](screenshots/Admin%20Dashboard%20-%20Full%20Page.png) | ![Students List](screenshots/Students%20List%20-%20Full%20Page.png) |
-
-| Examinations | Analytics |
-|---|---|
-| ![Examinations](screenshots/Examinations%20List.png) | ![Report Center](screenshots/Report%20Center%20-%20Full%20Page.png) |
-
-| Student Profile | Exam Results |
-|---|---|
-| ![Student Profile](screenshots/Student%20Profile%20-%20Leo%20Overview.png) | ![Exam Results](screenshots/Exam%20Detail%20-%20With%20Results.png) |
 
 ## Tech Stack
 
@@ -143,7 +145,5 @@ Low-fidelity wireframes and high-fidelity mockups were created in Figma before i
 
 - [Anushka Pratap Singh](https://github.com/anushkaps)
 - [Singam Sai Asritha](https://github.com/Asritha-Singam)
-
-## Project Context
 
 Originally developed as a collaborative software design project at IIIT Hyderabad.
